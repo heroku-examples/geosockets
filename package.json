@@ -1,0 +1,35 @@
+{
+  "name": "geosockets",
+  "version": "0.0.0",
+  "description": "Put all your site visitors on a map",
+  "main": "index.coffee",
+  "scripts": {
+    "start": "coffee index.coffee",
+    "test": "foreman run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/zeke/geosockets.git"
+  },
+  "keywords": [
+    "geo",
+    "websockets",
+    "heroku",
+    "map"
+  ],
+  "author": "zeke",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zeke/geosockets/issues"
+  },
+  "dependencies": {
+    "restify": "~2.6.0",
+    "logfmt": "~0.15.0",
+    "express": "~3.4.0",
+    "coffee-script": "~1.6.3"
+  },
+  "devDependencies": {
+    "mocha": "~1.13.0",
+    "supertest": "~0.8.0"
+  }
+}

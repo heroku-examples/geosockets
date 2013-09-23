@@ -1,0 +1,13 @@
+<script src="//cdnjs.cloudflare.com/ajax/libs/zepto/1.0/zepto.min.js"></script>
+
+<script>
+  Zepto(function($){
+    $.get('/api', function(data)) {
+      $('#response').text(JSON.stringify(data))
+    }
+  })
+</script>
+
+<div id="response">
+  ...
+</div>
