@@ -7,11 +7,15 @@
 
   // Kick things off when the DOM is ready.
   function start() {
-    var host = window.document.location.host.replace(/:.*/, '');
-    var ws = new WebSocket('ws://' + host + ':8080');
+    var host = location.origin.replace(/^http/, 'ws') // e.g. "ws://localhost:5000"
+    var ws = new WebSocket(host)
 
     ws.onmessage = function (event) {
       console.log(event.data);
+    };
+
+    ws.onerror = function (error) {
+      console.error(error);
     };
 
     ws.onopen = function(event) {
