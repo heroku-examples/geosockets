@@ -18,7 +18,7 @@ suite "app", ->
         expect 200, done
 
   describe "GET /api", ->
-    it "matches city", (done) ->
+    test "matches city", (done) ->
       request(app).
         get("/api").
         set("Accept", "application/json").
