@@ -26,7 +26,8 @@
     "restify": "~2.6.0",
     "logfmt": "~0.15.0",
     "express": "~3.4.0",
-    "coffee-script": "~1.6.3"
+    "coffee-script": "~1.6.3",
+    "ws": "~0.4.31"
   },
   "devDependencies": {
     "mocha": "~1.13.0",

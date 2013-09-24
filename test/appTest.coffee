@@ -9,15 +9,8 @@ suite "app", ->
   test "is a function", ->
     assert.equal "function", typeof(app)
 
-  describe "GET /foo", ->
-    it "responds with json", (done) ->
-      request(app).
-        get("/foo").
-        set("Accept", "application/json").
-        expect("Content-Type", /json/).
-        expect 200, done
-
   describe "GET /api", ->
+
     test "matches city", (done) ->
       request(app).
         get("/api").

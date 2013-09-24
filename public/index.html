@@ -1,13 +1,25 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/zepto/1.0/zepto.min.js"></script>
 
 <script>
-  Zepto(function($){
-    $.get('/api', function(data)) {
-      $('#response').text(JSON.stringify(data))
-    }
-  })
-</script>
 
-<div id="response">
-  ...
-</div>
+  // We'll use zepto to make Ajax requests to our geoip webservice.
+  Zepto(start)
+
+  // Kick things off when the DOM is ready.
+  function start() {
+    var host = window.document.location.host.replace(/:.*/, '');
+    var ws = new WebSocket('ws://' + host + ':8080');
+
+    ws.onmessage = function (event) {
+      console.log(event.data);
+    };
+
+    ws.onopen = function(event) {
+      $.get('/api', function(data) {
+        ws.send(JSON.stringify(data))
+      })
+    };
+
+  }
+
+</script>

@@ -5,7 +5,7 @@ errorLogger.stream = process.stderr
 
 module.exports =
 
-  locateUser: (req, res, next) ->
+  getUserLocation: (req, res, next) ->
     ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress
     url = "http://freegeoip.net/json/#{ip}"
 
