@@ -13,7 +13,7 @@ module.exports = ->
 
   # Websockets
   @server = http.createServer(@app)
-  @server.listen 8080
+  @server.listen(process.env.PORT or 5000)
 
   wss = new ws(server: @server)
 
@@ -32,7 +32,5 @@ module.exports = ->
   # Routes
   @app.get '/api', geosockets.getUserLocation
 
-  @app.listen(process.env.PORT or 5000)
-
-  # Return app for testability testable
+  # Return app for testability
   @app
