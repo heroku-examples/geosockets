@@ -7,7 +7,7 @@ module.exports =
 
   getUserLocation: (req, res, next) ->
     ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress
-    console.log "user ip", ip
+    console.log req.headers
     url = "http://freegeoip.net/json/#{ip}"
 
     http.get url, (rez) ->
