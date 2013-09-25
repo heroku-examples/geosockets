@@ -1,48 +1,78 @@
 ws = require('ws').Server
 http = require 'http'
 express = require 'express'
-# redis = require 'redis-client'
+redis = require 'redis'
+cookie = require 'cookie-cutter'
 
 module.exports = ->
 
-  # Express app
+  # Redis Pub/Sub
+  redisUrl = require("url").parse(process.env.OPENREDIS_URL or 'redis://localhost:6379')
+  @redisClient = redis.createClient(redisUrl.port, redisUrl.hostname)
+  @subscriber = redis.createClient(redisUrl.port, redisUrl.hostname)
+  @publisher = redis.createClient(redisUrl.port, redisUrl.hostname)
+
+  @subscriber.on 'message', (channel, message) =>
+
+    for socket in @socketServer.clients
+
+      # Extend user expiration
+      uuid = cookie(socket.upgradeReq.headers.cookie).get('geosockets-uuid')
+      @redisClient.expire uuid, 60*60
+
+      switch channel
+        when "add"
+          socket.send message
+        when "remove"
+          socket.send JSON.stringify "remove #{message}"
+
+  @subscriber.subscribe 'add', 'remove'
+  # @subscriber.subscribe 'remove'
+
+  # Express App
   @app = express()
   @app.configure =>
     @app.use @app.router
     @app.use '/', express.static('public')
 
-  # HTTP listener
+  # HTTP Server
   @server = http.createServer(@app)
   @server.listen(process.env.PORT or 5000)
 
-  @sockets = []
-  # Websockets
+  # Websockets Server
   @socketServer = new ws(server: @server)
   @socketServer.on "connection", (socket) =>
-    # socket.send "hello from the server"
 
-    @sockets.push sockets
-    console.log @sockets
+    # Send all existing data to newly connected client
+    @redisClient.keys 'user:*', (err, keys) ->
+      return console.error(err) if err
+      return if keys.length is 0
+      @redisClient.mget keys, (err, geodata) ->
+        socket.send JSON.stringify(geodata)
 
-    socket.on 'message', (position) =>
-      # @positions.push(position)
-      socket.send JSON.stringify(position)
+    # Handle incoming messages
+    socket.on 'message', (data, flags) =>
+      data = JSON.parse(data)
+      return unless data
 
-      # TOOD: push location to database
+      # If message contains geodata, publish it.
+      if data and data.coords and data.coords.longitude
+        # data.uuid = cookie(socket.upgradeReq.headers.cookie).get('geosockets-uuid')
 
-      console.log "new position", position
+        # Store the user's geodata in redis for an hour
+        @redisClient.setex data.uuid, 60*60, JSON.stringify(data)
 
-    socket.on "close", (code, message) ->
+        @publisher.publish 'add', JSON.stringify(data)
 
-      console.log "socket closed", code, message
+    # Handle disappearing users
+    socket.on "close", (code, message) =>
+      # console.log "socket closed", code, message
 
-      # socket.send "cloooooosed"
-      # TODO: flush database
+      # Look in the socket cookie for UUID
+      uuid = cookie(socket.upgradeReq.headers.cookie).get('geosockets-uuid')
 
-      # When a connection is closed, ask all remaining clients
-      # to republish their location
-      # socket.send JSON.stringify
-      #   requestedAction: "publish"
+      @redisClient.del uuid
+      @publisher.publish 'remove', uuid
 
   # Return app for testability
   @app

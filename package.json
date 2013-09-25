@@ -30,7 +30,11 @@
     "ws": "~0.4.31",
     "domready": "~0.2.12",
     "superagent": "~0.15.4",
-    "geolocationstream": "0.0.1"
+    "geolocationstream": "0.0.1",
+    "redis": "~0.8.4",
+    "hiredis": "~0.1.15",
+    "node-uuid": "~1.4.1",
+    "cookie-cutter": "~0.1.0"
   },
   "devDependencies": {
     "mocha": "~1.13.0",
