@@ -8,26 +8,22 @@ module.exports = ->
 
   # Redis Pub/Sub
   redisUrl = require("url").parse(process.env.OPENREDIS_URL or 'redis://localhost:6379')
-  @redisClient = redis.createClient(redisUrl.port, redisUrl.hostname)
+  @redis = redis.createClient(redisUrl.port, redisUrl.hostname)
   @subscriber = redis.createClient(redisUrl.port, redisUrl.hostname)
-  @publisher = redis.createClient(redisUrl.port, redisUrl.hostname)
-
   @subscriber.on 'message', (channel, message) =>
-
     for socket in @socketServer.clients
 
       # Extend user expiration
       uuid = cookie(socket.upgradeReq.headers.cookie).get('geosockets-uuid')
-      @redisClient.expire uuid, 60*60
+      @redis.expire uuid, 60
 
       switch channel
-        when "add"
+        when "addUser"
           socket.send message
-        when "remove"
-          socket.send JSON.stringify "remove #{message}"
+        when "removeUser"
+          socket.send JSON.stringify "removeUser #{message}"
 
-  @subscriber.subscribe 'add', 'remove'
-  # @subscriber.subscribe 'remove'
+  @subscriber.subscribe 'addUser', 'removeUser'
 
   # Express App
   @app = express()
@@ -44,10 +40,10 @@ module.exports = ->
   @socketServer.on "connection", (socket) =>
 
     # Send all existing data to newly connected client
-    @redisClient.keys 'user:*', (err, keys) ->
+    @redis.keys 'user:*', (err, keys) ->
       return console.error(err) if err
       return if keys.length is 0
-      @redisClient.mget keys, (err, geodata) ->
+      @redis.mget keys, (err, geodata) ->
         socket.send JSON.stringify(geodata)
 
     # Handle incoming messages
@@ -57,12 +53,10 @@ module.exports = ->
 
       # If message contains geodata, publish it.
       if data and data.coords and data.coords.longitude
-        # data.uuid = cookie(socket.upgradeReq.headers.cookie).get('geosockets-uuid')
 
-        # Store the user's geodata in redis for an hour
-        @redisClient.setex data.uuid, 60*60, JSON.stringify(data)
-
-        @publisher.publish 'add', JSON.stringify(data)
+        # Store the user's geodata in redis for a while
+        @redis.setex data.uuid, 60, JSON.stringify(data)
+        @redis.publish 'addUser', JSON.stringify(data)
 
     # Handle disappearing users
     socket.on "close", (code, message) =>
@@ -71,8 +65,8 @@ module.exports = ->
       # Look in the socket cookie for UUID
       uuid = cookie(socket.upgradeReq.headers.cookie).get('geosockets-uuid')
 
-      @redisClient.del uuid
-      @publisher.publish 'remove', uuid
+      @redis.del uuid
+      @redis.publish 'removeUser', uuid
 
   # Return app for testability
   @app

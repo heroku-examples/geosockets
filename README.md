@@ -13,13 +13,14 @@ Geosockets is tested with [mocha](http://visionmedia.github.io/mocha/) and [supe
 
 ### Running the App Locally
 
-First off, you'll need to install the [Heroku Toolbelt](https://toolbelt.heroku.com)
-and [Node.js](http://nodejs.org/).
+First off, you'll need to install the [Heroku Toolbelt](https://toolbelt.heroku.com),
+[Node.js](http://nodejs.org/), and [redis](http://redis.io/).
 
 ```
 git clone https://github.com/zeke/geosockets.git
 cd geosockets
 npm install
+redis-server&
 foreman start web
 ```
 
