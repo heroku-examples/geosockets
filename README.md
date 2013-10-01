@@ -55,6 +55,7 @@ npm test
 ```
 heroku create
 heroku labs:enable websockets
+heroku addons:add openredis:micro # $10/month
 git push heroku master
 heroku open
 ```
