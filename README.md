@@ -16,11 +16,29 @@ Geosockets is tested with [mocha](http://visionmedia.github.io/mocha/) and [supe
 First off, you'll need to install the [Heroku Toolbelt](https://toolbelt.heroku.com),
 [Node.js](http://nodejs.org/), and [redis](http://redis.io/).
 
+Clone the repo and install npm dependencies:
+
 ```
 git clone https://github.com/zeke/geosockets.git
 cd geosockets
 npm install
+```
+
+Start redis in the background:
+
+```
 redis-server&
+```
+
+Keep grunt running the background, watching for changes to client.coffee:
+
+```
+grunt watch
+```
+
+Fire up the server:
+
+````
 foreman start web
 ```
 

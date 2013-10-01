@@ -39,6 +39,7 @@
   domready(function() {
     var host;
     if (!window['WebSocket']) {
+      alert("Your browser doesn't support WebSockets.");
       return;
     }
     if (!cookie.get('geosockets-uuid')) {

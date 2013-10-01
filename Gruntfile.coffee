@@ -13,12 +13,12 @@ module.exports = (grunt) ->
 
     coffeeify:
       basic:
-        src: ['lib/client.coffee']
+        src: ['client.coffee']
         dest: "public/client.js"
 
     watch:
       coffeeify:
-        files: ['lib/client.coffee']
+        files: ['client.coffee']
         tasks: ['coffeeify']
       # sass:
       #   files: ['src/styles/*.sass']
@@ -27,4 +27,4 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-coffeeify'
   # grunt.loadNpmTasks 'grunt-contrib-compass'
   grunt.loadNpmTasks 'grunt-contrib-watch'
-  grunt.registerTask 'default', ['watch']
+  grunt.registerTask 'default', ['coffeeify']

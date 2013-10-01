@@ -3,4 +3,4 @@
 # Putting the server in its own module makes it easier to test.
 # See test/serverTest.coffee
 
-require('./lib/server')()
+require('./server')()

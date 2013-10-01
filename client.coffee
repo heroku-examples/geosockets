@@ -23,25 +23,31 @@ class Geo
 
 domready ->
 
-  # Sorry, old IE...
-  return unless window['WebSocket']
+  unless window['WebSocket']
+    alert "Your browser doesn't support WebSockets."
+    return
 
-  # Create a uniquely identifying cookie
+  # Create a cookie that the server can use to uniquely
+  # identify this client. The prefix makes redis batch
+  # operations easier.
+  #
   unless cookie.get 'geosockets-uuid'
     cookie.set 'geosockets-uuid', "user:" + uuid.v4()
 
-  # Open Socket
+  # Open the socket connection
+  # This regex works with http and https URLs.
+  #
   host = location.origin.replace(/^http/, 'ws')
   window.socket = new WebSocket(host)
 
-  # Fire up the Geostream!
+  # Start listening for geolocation events from the browser.
+  #
   window.geo = new Geo(socket)
 
   socket.onopen = (event) ->
     geo.publish()
 
   socket.onmessage = (event) ->
-    # console.log 'incoming message:', JSON.parse(event.data)
     console.log JSON.parse(event.data)
 
   socket.onerror = (error) ->

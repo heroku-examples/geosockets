@@ -2,7 +2,7 @@ assert = require "assert"
 supertest = require "supertest"
 express = require "express"
 
-server = require('../lib/server')()
+server = require('server')()
 
 suite "server", ->
 
