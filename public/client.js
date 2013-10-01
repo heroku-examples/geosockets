@@ -1,16 +1,16 @@
 ;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
 (function() {
-  var Geo, cookie, domready, geolocationstream, uuid;
+  var Geo, Map, cookie, domready, geolocationstream, uuid;
 
   domready = require('domready');
-
-  geolocationstream = require('geolocationstream');
 
   uuid = require('node-uuid');
 
   cookie = require('cookie-cutter');
 
-  Geo = (function() {
+  geolocationstream = require('geolocationstream');
+
+  module.exports = Geo = (function() {
     function Geo(socket) {
       var _this = this;
       this.socket = socket;
@@ -36,6 +36,38 @@
 
   })();
 
+  window.exports = Map = (function() {
+    function Map() {
+      this.map = L.mapbox.map('map', 'examples.map-20v6611k').setView([40, -74.50], 9);
+    }
+
+    Map.prototype.render = function(data) {
+      var datum, geodata, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = data.length; _i < _len; _i++) {
+        datum = data[_i];
+        datum = JSON.parse(datum);
+        geodata = {
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [datum.coords.longitude, datum.coords.latitude]
+          },
+          properties: {
+            "marker-color": "#626AA3",
+            "marker-size": "small"
+          }
+        };
+        L.mapbox.markerLayer(geodata).addTo(this.map);
+        _results.push(this.map.panTo(geodata.geometry.coordinates.reverse()));
+      }
+      return _results;
+    };
+
+    return Map;
+
+  })();
+
   domready(function() {
     var host;
     if (!window['WebSocket']) {
@@ -45,6 +77,7 @@
     if (!cookie.get('geosockets-uuid')) {
       cookie.set('geosockets-uuid', "user:" + uuid.v4());
     }
+    window.map = new Map();
     host = location.origin.replace(/^http/, 'ws');
     window.socket = new WebSocket(host);
     window.geo = new Geo(socket);
@@ -52,7 +85,11 @@
       return geo.publish();
     };
     socket.onmessage = function(event) {
-      return console.log(JSON.parse(event.data));
+      var data;
+      data = JSON.parse(event.data);
+      if (data) {
+        return map.render(data);
+      }
     };
     socket.onerror = function(error) {
       return console.error(error);
