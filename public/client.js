@@ -1,6 +1,6 @@
 ;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
 (function() {
-  var Geo, Map, cookie, domready, geolocationstream, uuid;
+  var Geo, GeolocationStream, Map, cookie, domready, uuid;
 
   domready = require('domready');
 
@@ -8,14 +8,14 @@
 
   cookie = require('cookie-cutter');
 
-  geolocationstream = require('geolocationstream');
+  GeolocationStream = require('geolocation-stream');
 
   module.exports = Geo = (function() {
     function Geo(socket) {
       var _this = this;
       this.socket = socket;
       this.position = null;
-      this.stream = new geolocationstream();
+      this.stream = new GeolocationStream();
       this.stream.on("data", function(position) {
         _this.position = position;
         _this.position.uuid = cookie.get('geosockets-uuid');
@@ -38,7 +38,7 @@
 
   window.exports = Map = (function() {
     function Map() {
-      this.map = L.mapbox.map('map', 'examples.map-20v6611k').setView([40, -74.50], 9);
+      this.map = L.mapbox.map('map', 'examples.map-20v6611k').setView([40, -74.50], 4);
     }
 
     Map.prototype.render = function(data) {
@@ -102,7 +102,7 @@
 }).call(this);
 
 
-},{"domready":2,"node-uuid":3,"cookie-cutter":4,"geolocationstream":5}],2:[function(require,module,exports){
+},{"domready":2,"node-uuid":3,"cookie-cutter":4,"geolocation-stream":5}],2:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */

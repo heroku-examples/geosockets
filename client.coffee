@@ -1,15 +1,13 @@
 domready = require 'domready'
 uuid = require 'node-uuid'
 cookie = require 'cookie-cutter'
-# Map = require __dirname + 'lib/map.coffee'
-
-geolocationstream = require 'geolocationstream'
+GeolocationStream = require 'geolocation-stream'
 
 module.exports = class Geo
 
   constructor: (@socket) ->
     @position = null
-    @stream = new geolocationstream()
+    @stream = new GeolocationStream()
 
     @stream.on "data", (position) =>
       @position = position
@@ -27,7 +25,7 @@ window.exports = class Map
 
   constructor: ->
     @map = L.mapbox.map('map', 'examples.map-20v6611k')
-      .setView([40, -74.50], 9)
+      .setView([40, -74.50], 4)
 
   render: (data) ->
     for datum in data
@@ -41,10 +39,8 @@ window.exports = class Map
           "marker-color": "#626AA3"
           "marker-size": "small"
           # "marker-symbol": "marker"
-        # marker-size: one of small, medium or large. Can be used to put greater or lesser emphasis on a marker based on its size.
-        # marker-color: a valid RGB hex color, like #ff4444. Color can be used to put emphasis on markers, group markers together by various colors, associate markers with various color semantics (e.g. green means good, red means bad) and more.
-        # marker-symbol: an icon ID from the Maki project or a single alphanumeric character (a-z or 0-9). Attach a specific symbolic meaning to a marker.
-
+          # For marker styling info, see
+          # http://www.mapbox.com/developers/simplestyle/
 
       L.mapbox.markerLayer(geodata).addTo(@map)
       # console.log geodata
