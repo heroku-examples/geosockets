@@ -43,7 +43,7 @@ window.exports = class Map
           # http://www.mapbox.com/developers/simplestyle/
 
       L.mapbox.markerLayer(geodata).addTo(@map)
-      # console.log geodata
+      console.log geodata
       # console.log geodata.geometry.coordinates
       @map.panTo geodata.geometry.coordinates.reverse()
 
@@ -79,6 +79,7 @@ domready ->
 
   socket.onmessage = (event) ->
     data = JSON.parse(event.data)
+    console.log data
     map.render(data) if data
 
   socket.onerror = (error) ->
