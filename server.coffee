@@ -23,44 +23,17 @@ module.exports = ->
   @socketServer = new ws(server: @server)
   @socketServer.on "connection", (socket) =>
 
-    # When a user established a connection, send them
-    # a list of all connected users.
-    #
-    @UserStore.getAll (err, users) ->
-      return console.error(err) if err
-      socket.send JSON.stringify(users)
-
     socket.on 'message', (data, flags) =>
       data = JSON.parse(data)
-      return unless data
+      return unless data and data.coords
 
-      # If an incoming message contains geodata, add it to redis
-      # and notify all connected users.
-      #
-      if data and data.coords and data.coords.longitude
-        @UserStore.add data, (err, users) ->
+      @UserStore.add data, (err, users) ->
+        return console.error(err) if err
+        @UserStore.getByUrl data.url, (err, users) ->
           return console.error(err) if err
-          @UserStore.getAll (err, users) ->
-            return console.error(err) if err
-            for client in @socketServer.clients
-              client.send JSON.stringify(users)
+          for client in @socketServer.clients
+            client.send JSON.stringify(users)
 
-    socket.on "close", (code, message) =>
-
-      # We could remove the user, but for now we'll just let
-      # their entry in redis time out.
-
-      # # Look in the socket cookie for UUID
-      # uuid = cookie(socket.upgradeReq.headers.cookie).get('geosockets-uuid')
-
-      # @UserStore.remove uuid, (err, users) ->
-      #   return console.error(err) if err
-
-      #   # Send all users to all users!
-      #   @UserStore.getAll (err, users) ->
-      #     return console.error(err) if err
-      #     for client in @socketServer.clients
-      #       client.send JSON.stringify(users)
 
   # Return app for testability
   @app

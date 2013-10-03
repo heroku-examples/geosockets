@@ -90,11 +90,10 @@ domready ->
     return
 
   # Create a cookie that the server can use to uniquely
-  # identify this client. The prefix makes redis batch
-  # operations easier.
+  # identify this client.
   #
   unless cookie.get 'geosockets-uuid'
-    cookie.set 'geosockets-uuid', "user:" + uuid.v4()
+    cookie.set 'geosockets-uuid', uuid.v4()
 
   # Determine the URL of the current page
   # Look first for a canonical URL, then default to window.location.href
@@ -105,12 +104,14 @@ domready ->
   window.map = new Map()
 
   # Open the socket connection
-  # This regex works with http and https URLs.
   #
-  host = location.origin.replace(/^http/, 'ws')
+  if location.host.match(/localhost/)
+    host = "ws://localhost:5000"
+  else
+    host = "wss://geosockets.herokuapp.com"
   window.socket = new WebSocket(host)
 
-  # Start listening for geolocation events from the browser.
+  # Start listening for browser geolocation events
   #
   window.geoPublisher = new GeoPublisher(socket)
 
