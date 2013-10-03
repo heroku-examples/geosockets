@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://github.com/zeke/geosockets.git"
+    "url": "http://github.com/heroku-examples/geosockets.git"
   },
   "keywords": [
     "geo",
@@ -20,7 +20,7 @@
   "author": "zeke",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/zeke/geosockets/issues"
+    "url": "https://github.com/heroku-examples/geosockets/issues"
   },
   "dependencies": {
     "restify": "~2.6.0",

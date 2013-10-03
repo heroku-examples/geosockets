@@ -40,7 +40,7 @@ If you're new to Heroku or Node.js development, you'll need to install a few thi
 Clone the repo and install npm dependencies:
 
 ```
-git clone https://github.com/zeke/geosockets.git
+git clone https://github.com/heroku-examples/geosockets.git
 cd geosockets
 npm install
 ```
