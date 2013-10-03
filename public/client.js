@@ -61,7 +61,6 @@
 
     Map.prototype.toGeoJSON = function(data) {
       return data.map(function(datum) {
-        datum = JSON.parse(datum);
         return {
           type: "Feature",
           geometry: {
@@ -113,11 +112,14 @@
     };
     socket.onmessage = function(event) {
       var data;
-      data = JSON.parse(event.data);
-      console.log(data);
-      if (data) {
-        return map.render(data);
+      data = JSON.parse(event.data).map(function(datum) {
+        return JSON.parse(datum);
+      });
+      if (!data || data.length === 0) {
+        return;
       }
+      console.dir(data);
+      return map.render(data);
     };
     socket.onerror = function(error) {
       return console.error(error);
@@ -130,7 +132,63 @@
 }).call(this);
 
 
-},{"node-uuid":2,"domready":3,"cookie-cutter":4,"geolocation-stream":5,"mapbox.js":6}],7:[function(require,module,exports){
+},{"domready":2,"node-uuid":3,"cookie-cutter":4,"geolocation-stream":5,"mapbox.js":6}],2:[function(require,module,exports){
+/*!
+  * domready (c) Dustin Diaz 2012 - License MIT
+  */
+!function (name, definition) {
+  if (typeof module != 'undefined') module.exports = definition()
+  else if (typeof define == 'function' && typeof define.amd == 'object') define(definition)
+  else this[name] = definition()
+}('domready', function (ready) {
+
+  var fns = [], fn, f = false
+    , doc = document
+    , testEl = doc.documentElement
+    , hack = testEl.doScroll
+    , domContentLoaded = 'DOMContentLoaded'
+    , addEventListener = 'addEventListener'
+    , onreadystatechange = 'onreadystatechange'
+    , readyState = 'readyState'
+    , loadedRgx = hack ? /^loaded|^c/ : /^loaded|c/
+    , loaded = loadedRgx.test(doc[readyState])
+
+  function flush(f) {
+    loaded = 1
+    while (f = fns.shift()) f()
+  }
+
+  doc[addEventListener] && doc[addEventListener](domContentLoaded, fn = function () {
+    doc.removeEventListener(domContentLoaded, fn, f)
+    flush()
+  }, f)
+
+
+  hack && doc.attachEvent(onreadystatechange, fn = function () {
+    if (/^c/.test(doc[readyState])) {
+      doc.detachEvent(onreadystatechange, fn)
+      flush()
+    }
+  })
+
+  return (ready = hack ?
+    function (fn) {
+      self != top ?
+        loaded ? fn() : fns.push(fn) :
+        function () {
+          try {
+            testEl.doScroll('left')
+          } catch (e) {
+            return setTimeout(function() { ready(fn) }, 50)
+          }
+          fn()
+        }()
+    } :
+    function (fn) {
+      loaded ? fn() : fns.push(fn)
+    })
+})
+},{}],7:[function(require,module,exports){
 require=(function(e,t,n,r){function i(r){if(!n[r]){if(!t[r]){if(e)return e(r);throw new Error("Cannot find module '"+r+"'")}var s=n[r]={exports:{}};t[r][0](function(e){var n=t[r][1][e];return i(n?n:e)},s,s.exports)}return n[r].exports}for(var s=0;s<r.length;s++)i(r[s]);return i})(typeof require!=="undefined"&&require,{1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -3995,7 +4053,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 },{}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 (function(Buffer){//     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -4243,63 +4301,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 }).call(this);
 
 })(require("__browserify_buffer").Buffer)
-},{"crypto":8,"__browserify_buffer":7}],3:[function(require,module,exports){
-/*!
-  * domready (c) Dustin Diaz 2012 - License MIT
-  */
-!function (name, definition) {
-  if (typeof module != 'undefined') module.exports = definition()
-  else if (typeof define == 'function' && typeof define.amd == 'object') define(definition)
-  else this[name] = definition()
-}('domready', function (ready) {
-
-  var fns = [], fn, f = false
-    , doc = document
-    , testEl = doc.documentElement
-    , hack = testEl.doScroll
-    , domContentLoaded = 'DOMContentLoaded'
-    , addEventListener = 'addEventListener'
-    , onreadystatechange = 'onreadystatechange'
-    , readyState = 'readyState'
-    , loadedRgx = hack ? /^loaded|^c/ : /^loaded|c/
-    , loaded = loadedRgx.test(doc[readyState])
-
-  function flush(f) {
-    loaded = 1
-    while (f = fns.shift()) f()
-  }
-
-  doc[addEventListener] && doc[addEventListener](domContentLoaded, fn = function () {
-    doc.removeEventListener(domContentLoaded, fn, f)
-    flush()
-  }, f)
-
-
-  hack && doc.attachEvent(onreadystatechange, fn = function () {
-    if (/^c/.test(doc[readyState])) {
-      doc.detachEvent(onreadystatechange, fn)
-      flush()
-    }
-  })
-
-  return (ready = hack ?
-    function (fn) {
-      self != top ?
-        loaded ? fn() : fns.push(fn) :
-        function () {
-          try {
-            testEl.doScroll('left')
-          } catch (e) {
-            return setTimeout(function() { ready(fn) }, 50)
-          }
-          fn()
-        }()
-    } :
-    function (fn) {
-      loaded ? fn() : fns.push(fn)
-    })
-})
-},{}],4:[function(require,module,exports){
+},{"crypto":8,"__browserify_buffer":7}],4:[function(require,module,exports){
 var exports = module.exports = function (doc) {
     if (!doc) doc = {};
     if (typeof doc === 'string') doc = { cookie: doc };
@@ -15552,7 +15554,101 @@ module.exports = {
     createPopup: createPopup
 };
 
-},{"./url":35,"./sanitize":31}],24:[function(require,module,exports){
+},{"./url":35,"./sanitize":31}],23:[function(require,module,exports){
+'use strict';
+
+var util = require('./util'),
+    url = require('./url');
+
+var TileLayer = L.TileLayer.extend({
+    includes: [require('./load_tilejson')],
+
+    options: {
+        format: 'png'
+    },
+
+    // http://mapbox.com/developers/api/#image_quality
+    formats: [
+        'png',
+        // PNG
+        'png32', 'png64', 'png128', 'png256',
+        // JPG
+        'jpg70', 'jpg80', 'jpg90'],
+
+    initialize: function(_, options) {
+        L.TileLayer.prototype.initialize.call(this, undefined, options);
+
+        this._tilejson = {};
+
+        if (options && options.detectRetina &&
+            L.Browser.retina && options.retinaVersion) {
+            _ = options.retinaVersion;
+        }
+
+        if (options && options.format) {
+            util.strict_oneof(options.format, this.formats);
+        }
+
+        this._loadTileJSON(_);
+    },
+
+    setFormat: function(_) {
+        util.strict(_, 'string');
+        this.options.format = _;
+        this.redraw();
+        return this;
+    },
+
+    // disable the setUrl function, which is not available on mapbox tilelayers
+    setUrl: null,
+
+    _setTileJSON: function(json) {
+        util.strict(json, 'object');
+
+        L.extend(this.options, {
+            tiles: json.tiles,
+            attribution: json.attribution,
+            minZoom: json.minzoom,
+            maxZoom: json.maxzoom,
+            tms: json.scheme === 'tms',
+            bounds: json.bounds && util.lbounds(json.bounds)
+        });
+
+        this._tilejson = json;
+        this.redraw();
+        return this;
+    },
+
+    getTileJSON: function() {
+        return this._tilejson;
+    },
+
+    // this is an exception to mapbox.js naming rules because it's called
+    // by `L.map`
+    getTileUrl: function(tilePoint) {
+        var tiles = this.options.tiles,
+            index = Math.abs(tilePoint.x + tilePoint.y) % tiles.length,
+            url = tiles[index];
+
+        var templated = L.Util.template(url, tilePoint);
+        if (!templated) return templated;
+        else return templated.replace('.png', '.' + this.options.format);
+    },
+
+    // TileJSON.TileLayers are added to the map immediately, so that they get
+    // the desired z-index, but do not update until the TileJSON has been loaded.
+    _update: function() {
+        if (this.options.tiles) {
+            L.TileLayer.prototype._update.call(this);
+        }
+    }
+});
+
+module.exports = function(_, options) {
+    return new TileLayer(_, options);
+};
+
+},{"./util":34,"./url":35,"./load_tilejson":37}],24:[function(require,module,exports){
 'use strict';
 
 var ShareControl = L.Control.extend({
@@ -15651,101 +15747,7 @@ module.exports = function(_, options) {
     return new ShareControl(_, options);
 };
 
-},{"./load_tilejson":37}],23:[function(require,module,exports){
-'use strict';
-
-var util = require('./util'),
-    url = require('./url');
-
-var TileLayer = L.TileLayer.extend({
-    includes: [require('./load_tilejson')],
-
-    options: {
-        format: 'png'
-    },
-
-    // http://mapbox.com/developers/api/#image_quality
-    formats: [
-        'png',
-        // PNG
-        'png32', 'png64', 'png128', 'png256',
-        // JPG
-        'jpg70', 'jpg80', 'jpg90'],
-
-    initialize: function(_, options) {
-        L.TileLayer.prototype.initialize.call(this, undefined, options);
-
-        this._tilejson = {};
-
-        if (options && options.detectRetina &&
-            L.Browser.retina && options.retinaVersion) {
-            _ = options.retinaVersion;
-        }
-
-        if (options && options.format) {
-            util.strict_oneof(options.format, this.formats);
-        }
-
-        this._loadTileJSON(_);
-    },
-
-    setFormat: function(_) {
-        util.strict(_, 'string');
-        this.options.format = _;
-        this.redraw();
-        return this;
-    },
-
-    // disable the setUrl function, which is not available on mapbox tilelayers
-    setUrl: null,
-
-    _setTileJSON: function(json) {
-        util.strict(json, 'object');
-
-        L.extend(this.options, {
-            tiles: json.tiles,
-            attribution: json.attribution,
-            minZoom: json.minzoom,
-            maxZoom: json.maxzoom,
-            tms: json.scheme === 'tms',
-            bounds: json.bounds && util.lbounds(json.bounds)
-        });
-
-        this._tilejson = json;
-        this.redraw();
-        return this;
-    },
-
-    getTileJSON: function() {
-        return this._tilejson;
-    },
-
-    // this is an exception to mapbox.js naming rules because it's called
-    // by `L.map`
-    getTileUrl: function(tilePoint) {
-        var tiles = this.options.tiles,
-            index = Math.abs(tilePoint.x + tilePoint.y) % tiles.length,
-            url = tiles[index];
-
-        var templated = L.Util.template(url, tilePoint);
-        if (!templated) return templated;
-        else return templated.replace('.png', '.' + this.options.format);
-    },
-
-    // TileJSON.TileLayers are added to the map immediately, so that they get
-    // the desired z-index, but do not update until the TileJSON has been loaded.
-    _update: function() {
-        if (this.options.tiles) {
-            L.TileLayer.prototype._update.call(this);
-        }
-    }
-});
-
-module.exports = function(_, options) {
-    return new TileLayer(_, options);
-};
-
-},{"./util":34,"./url":35,"./load_tilejson":37}],25:[function(require,module,exports){
+},{"./load_tilejson":37}],25:[function(require,module,exports){
 'use strict';
 
 var LegendControl = L.Control.extend({
@@ -16401,42 +16403,7 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":34,"./tile_layer":23,"./marker_layer":29,"./grid_layer":28,"./grid_control":27,"./legend_control":25,"./load_tilejson":37}],34:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-    idUrl: function(_, t) {
-        if (_.indexOf('/') == -1) t.loadID(_);
-        else t.loadURL(_);
-    },
-    log: function(_) {
-        if (console && typeof console.error === 'function') {
-            console.error(_);
-        }
-    },
-    strict: function(_, type) {
-        if (typeof _ !== type) {
-            throw new Error('Invalid argument: ' + type + ' expected');
-        }
-    },
-    strict_instance: function(_, klass, name) {
-        if (!(_ instanceof klass)) {
-            throw new Error('Invalid argument: ' + name + ' expected');
-        }
-    },
-    strict_oneof: function(_, values) {
-        if (values.indexOf(_) == -1) {
-            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
-                values.join(', '));
-        }
-    },
-    lbounds: function(_) {
-        // leaflet-compatible bounds, since leaflet does not do geojson
-        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
-    }
-};
-
-},{}],33:[function(require,module,exports){
+},{"./util":34,"./tile_layer":23,"./marker_layer":29,"./grid_layer":28,"./grid_control":27,"./legend_control":25,"./load_tilejson":37}],33:[function(require,module,exports){
 (function(){// Copyright (C) 2010 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18884,6 +18851,41 @@ if (typeof module !== 'undefined') {
 }
 
 })()
+},{}],34:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+    idUrl: function(_, t) {
+        if (_.indexOf('/') == -1) t.loadID(_);
+        else t.loadURL(_);
+    },
+    log: function(_) {
+        if (console && typeof console.error === 'function') {
+            console.error(_);
+        }
+    },
+    strict: function(_, type) {
+        if (typeof _ !== type) {
+            throw new Error('Invalid argument: ' + type + ' expected');
+        }
+    },
+    strict_instance: function(_, klass, name) {
+        if (!(_ instanceof klass)) {
+            throw new Error('Invalid argument: ' + name + ' expected');
+        }
+    },
+    strict_oneof: function(_, values) {
+        if (values.indexOf(_) == -1) {
+            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
+                values.join(', '));
+        }
+    },
+    lbounds: function(_) {
+        // leaflet-compatible bounds, since leaflet does not do geojson
+        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
+    }
+};
+
 },{}],38:[function(require,module,exports){
 'use strict';
 
@@ -18970,7 +18972,7 @@ module.exports = {
     }
 };
 
-},{"./url":35,"./request":36,"./util":34}],27:[function(require,module,exports){
+},{"./request":36,"./url":35,"./util":34}],27:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),

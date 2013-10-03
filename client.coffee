@@ -54,23 +54,20 @@ class Map
   #
   toGeoJSON: (data) ->
     data.map (datum) ->
-      datum = JSON.parse(datum)
-      {
-        type: "Feature"
-        geometry:
-          type: "Point"
-          coordinates: [datum.coords.longitude, datum.coords.latitude]
-        properties:
-          title: "Someone"
-          icon:
-            iconUrl: "https://geosockets.herokuapp.com/marker.svg"
-            iconSize: [10, 10]
-            iconAnchor: [5, 5]
-            popupAnchor: [0, -25] # point from which the popup should open relative to the iconAnchor
-          # "marker-color": "#626AA3"
-          # "marker-size": "small"
-          # "marker-symbol": "marker"
-      }
+      type: "Feature"
+      geometry:
+        type: "Point"
+        coordinates: [datum.coords.longitude, datum.coords.latitude]
+      properties:
+        title: "Someone"
+        icon:
+          iconUrl: "https://geosockets.herokuapp.com/marker.svg"
+          iconSize: [10, 10]
+          iconAnchor: [5, 5]
+          popupAnchor: [0, -25] # point from which the popup should open relative to the iconAnchor
+        # "marker-color": "#626AA3"
+        # "marker-size": "small"
+        # "marker-symbol": "marker"
 
   render: (data) =>
 
@@ -116,9 +113,14 @@ domready ->
     geoPublisher.publish()
 
   socket.onmessage = (event) ->
+    # Parse the JSON message and each stringified JSON object within it
     data = JSON.parse(event.data)
-    console.log data
-    map.render(data) if data
+      .map (datum) -> JSON.parse(datum)
+
+    return if !data or data.length is 0
+
+    console.dir data
+    map.render(data)
 
   socket.onerror = (error) ->
     console.error error
