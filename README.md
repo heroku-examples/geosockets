@@ -18,11 +18,16 @@ Redis is used to persist visitor data. This allows the dynos running your app to
 [Browserify](https://github.com/substack/node-browserify#readme) and [Grunt](http://gruntjs.com/) are used to compile
 server.coffee into a single browser-ready javascript file.
 
-When the WebSocket connection is establised, the client determines the user's physical location using their [browser's geolocation API](https://www.google.com/search?q=browser%20geolocation%20api), then broadcasts its location to the server
-over the WebSocket connection.
+When the client is first run in the browser, a [UUID](https://github.com/broofa/node-uuid#readme) token is generated
+and stored in a cookie which is passed to the server within the headers of each WebSocket message. This gives the server a consistent way to identify each user.
 
-The client also listens for messages on the socket, rendering new visitors and removing departing visitors as the server
-sends continuous updates.
+The client uses the [browser's geolocation API](https://www.google.com/search?q=browser%20geolocation%20api) and the
+[geolocation-stream](https://github.com/maxogden/geolocation-stream#readme) node module to determine the user's physical location, continually listening for location updates in realtime.
+
+Once the WebSocket connection is establised, the client broadcasts its location to the server.
+
+The client listens for messages from the server, rendering a marker on the map for each new visitor,
+and removing markers as visitors leave the site.
 
 ### Running the App Locally
 

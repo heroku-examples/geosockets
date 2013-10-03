@@ -7,7 +7,7 @@ GeolocationStream = require 'geolocation-stream'
 # https://github.com/mapbox/mapbox.js/pull/498
 require 'mapbox.js'
 
-module.exports = class GeoPublisher
+class GeoPublisher
 
   constructor: (@socket) ->
     @position = null
@@ -25,34 +25,65 @@ module.exports = class GeoPublisher
     if @socket.readyState is 1
       @socket.send JSON.stringify(@position)
 
-window.exports = class Map
+class Map
 
   @defaultLatLng: [40, -74.50]
   @defaultZoom: 4
 
   constructor: ->
-    @map = L.mapbox.map('map', 'examples.map-20v6611k')
+
+    @markers = []
+
+    # Create a container DOM element for the map
+    @el = document.createElement('div')
+    @el.setAttribute('id', 'geosockets-map')
+    document.querySelector('body').appendChild(@el)
+
+    # Load CSS
+    link = document.createElement("link")
+    link.rel = "stylesheet"
+    link.type = "text/css"
+    link.href = "https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css"
+    document.body.appendChild link
+
+    # @map = L.mapbox.map('geosockets-map', 'financialtimes.map-w7l4lfi8')
+    @map = L.mapbox.map('geosockets-map', 'examples.map-20v6611k')
       .setView([40, -74.50], 4)
 
-  # For marker styling info, see http://www.mapbox.com/developers/simplestyle/
+  # Massage array of geodata into a GeoJSON-friendly format
   #
-  render: (data) ->
-    for datum in data
+  toGeoJSON: (data) ->
+    data.map (datum) ->
       datum = JSON.parse(datum)
-      geodata =
+      {
         type: "Feature"
         geometry:
           type: "Point"
           coordinates: [datum.coords.longitude, datum.coords.latitude]
         properties:
-          "marker-color": "#626AA3"
-          "marker-size": "small"
+          title: "Someone"
+          icon:
+            iconUrl: "https://geosockets.herokuapp.com/marker.svg"
+            iconSize: [10, 10]
+            iconAnchor: [5, 5]
+            popupAnchor: [0, -25] # point from which the popup should open relative to the iconAnchor
+          # "marker-color": "#626AA3"
+          # "marker-size": "small"
           # "marker-symbol": "marker"
+      }
 
-      L.mapbox.markerLayer(geodata).addTo(@map)
-      console.log geodata
-      # console.log geodata.geometry.coordinates
-      @map.panTo geodata.geometry.coordinates.reverse()
+  render: (data) =>
+
+    # Set a custom icon on each marker based on feature properties
+    @map.markerLayer.on "layeradd", (e) ->
+      marker = e.layer
+      feature = marker.feature
+      marker.setIcon L.icon(feature.properties.icon)
+
+    @map.markerLayer.setGeoJSON(@toGeoJSON(data))
+
+    # Pan the map to center this new marker
+    # @map.panTo geodata.geometry.coordinates.reverse()
 
 domready ->
 
