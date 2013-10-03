@@ -57,7 +57,7 @@ The Geosockets client can be used on any website. Just drop in the hotlinked scr
 and create a DOM element with an id of `geosockets` to contain the map.
 
 ```html
-<script src="https://raw.github.com/heroku-examples/geosockets/master/public/client.js"></script>
+<script src="https://geosockets.herokuapp.com/client.js"></script>
 <div id="geosockets"></div>
 ```
 
