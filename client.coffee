@@ -38,7 +38,7 @@ class Map
     # Create a container DOM element for the map
     @el = document.createElement('div')
     @el.setAttribute('id', 'geosockets-map')
-    document.querySelector('body').appendChild(@el)
+    document.querySelector('#geosockets-wrapper').appendChild(@el)
 
     # Load CSS
     link = document.createElement("link")
