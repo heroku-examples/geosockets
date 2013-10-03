@@ -3,7 +3,11 @@ uuid = require 'node-uuid'
 cookie = require 'cookie-cutter'
 GeolocationStream = require 'geolocation-stream'
 
-module.exports = class Geo
+# mapbox auto-attaches to window.L (not cool)
+# https://github.com/mapbox/mapbox.js/pull/498
+require 'mapbox.js'
+
+module.exports = class GeoPublisher
 
   constructor: (@socket) ->
     @position = null
@@ -23,10 +27,15 @@ module.exports = class Geo
 
 window.exports = class Map
 
+  @defaultLatLng: [40, -74.50]
+  @defaultZoom: 4
+
   constructor: ->
     @map = L.mapbox.map('map', 'examples.map-20v6611k')
       .setView([40, -74.50], 4)
 
+  # For marker styling info, see http://www.mapbox.com/developers/simplestyle/
+  #
   render: (data) ->
     for datum in data
       datum = JSON.parse(datum)
@@ -39,8 +48,6 @@ window.exports = class Map
           "marker-color": "#626AA3"
           "marker-size": "small"
           # "marker-symbol": "marker"
-          # For marker styling info, see
-          # http://www.mapbox.com/developers/simplestyle/
 
       L.mapbox.markerLayer(geodata).addTo(@map)
       console.log geodata
@@ -72,10 +79,10 @@ domready ->
 
   # Start listening for geolocation events from the browser.
   #
-  window.geo = new Geo(socket)
+  window.geoPublisher = new GeoPublisher(socket)
 
   socket.onopen = (event) ->
-    geo.publish()
+    geoPublisher.publish()
 
   socket.onmessage = (event) ->
     data = JSON.parse(event.data)
