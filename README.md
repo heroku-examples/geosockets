@@ -24,25 +24,11 @@ cd geosockets
 npm install
 ```
 
-Start redis in the background:
-
-```
-redis-server&
-```
-
-Keep grunt running the background, watching for changes to client.coffee:
-
-```
-grunt watch
-```
-
-Fire up the server:
+Fire up redis, a grunt watcher, and a node webserver at [localhost:5000](http://localhost:5000):
 
 ````
-foreman start web
+foreman start
 ```
-
-Then open [localhost:5000](http://localhost:5000) in your browser.
 
 ### Testing
 

@@ -1,2 +1,3 @@
 web: coffee index.coffee
-test: mocha --compilers coffee:coffee-script
+redis-dev: redis-server
+grunt-dev: grunt watch
