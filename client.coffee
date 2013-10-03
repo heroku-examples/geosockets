@@ -3,7 +3,7 @@ uuid = require 'node-uuid'
 cookie = require 'cookie-cutter'
 GeolocationStream = require 'geolocation-stream'
 
-# mapbox auto-attaches to window.L (not cool)
+# mapbox.js auto-attaches to window.L (not cool)
 # https://github.com/mapbox/mapbox.js/pull/498
 require 'mapbox.js'
 
@@ -101,7 +101,7 @@ domready ->
   if location.host.match(/localhost/)
     host = location.origin.replace(/^http/, 'ws')
   else
-    host = "wss://geosockets.herokuapp.com"
+    host = "ws://geosockets.herokuapp.com"
   window.socket = new WebSocket(host)
 
   # Start listening for browser geolocation events
