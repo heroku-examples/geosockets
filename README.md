@@ -33,9 +33,9 @@ and removing markers as visitors leave the site.
 
 If you're new to Heroku or Node.js development, you'll need to install a few things first:
 
-1. The [Heroku Toolbelt](https://toolbelt.heroku.com), which gives you git, foreman, and the heroku command-line interface.
+1. [Heroku Toolbelt](https://toolbelt.heroku.com), which gives you git, foreman, and the heroku command-line interface.
 1. [Node.js](http://nodejs.org/)
-1. [redis](http://redis.io/)
+1. [redis](http://redis.io/). If you're using [homebrew](http://brew.sh/), install with `brew install redis`
 
 Clone the repo and install npm dependencies:
 
