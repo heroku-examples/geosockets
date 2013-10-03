@@ -33,25 +33,20 @@ class Map
 
   constructor: ->
 
-    @markers = []
-
-    # Create a container DOM element for the map
-    @el = document.createElement('div')
-    @el.setAttribute('id', 'geosockets-map')
-    document.querySelector('#geosockets-wrapper').appendChild(@el)
-
-    # Load CSS
+    # Inject Mapbox CSS into the DOM
+    #
     link = document.createElement("link")
     link.rel = "stylesheet"
     link.type = "text/css"
     link.href = "https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css"
     document.body.appendChild link
 
-    # @map = L.mapbox.map('geosockets-map', 'financialtimes.map-w7l4lfi8')
-    @map = L.mapbox.map('geosockets-map', 'examples.map-20v6611k')
+    # Create the Mapbox map
+    #
+    @map = L.mapbox.map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
       .setView([40, -74.50], 4)
 
-  # Massage array of geodata into a GeoJSON-friendly format
+  # Massage geodata array into a GeoJSON-friendly format
   #
   toGeoJSON: (data) ->
     data.map (datum) ->
@@ -100,19 +95,16 @@ domready ->
   window.url = (document.querySelector('link[rel=canonical]') or window.location).href
 
   # Create the map
-  #
   window.map = new Map()
 
   # Open the socket connection
-  #
   if location.host.match(/localhost/)
-    host = "ws://localhost:5000"
+    host = location.origin.replace(/^http/, 'ws')
   else
     host = "wss://geosockets.herokuapp.com"
   window.socket = new WebSocket(host)
 
   # Start listening for browser geolocation events
-  #
   window.geoPublisher = new GeoPublisher(socket)
 
   socket.onopen = (event) ->

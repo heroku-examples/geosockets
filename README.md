@@ -51,6 +51,25 @@ Fire up redis, a grunt watcher, and the node webserver at [localhost:5000](http:
 foreman start
 ```
 
+### Using the Client Script on Your Site
+
+The Geosockets client can be used on any website. Just drop in the hotlinked script tag
+and create a DOM element with an id of `geosockets` to contain the map.
+
+```html
+<script src="https://raw.github.com/heroku-examples/geosockets/master/public/client.js"></script>
+<div id="geosockets"></div>
+```
+
+Use CSS to configure the size and position of the map:
+
+```css
+#geosockets {
+  width: 100%;
+  height: 100%;
+}
+```
+
 ### Testing
 
 Geosockets is tested with [mocha](http://visionmedia.github.io/mocha/) and [supertest](https://github.com/visionmedia/supertest#readme). Supertest pairs nicely with Express, allowing the entire express app to be mounted for simple and clean webservice integration tests.
