@@ -16,6 +16,7 @@ class GeoPublisher
     @stream.on "data", (position) =>
       @position = position
       @position.uuid = cookie.get 'geosockets-uuid'
+      @position.url = window.url
       @publish()
 
     @stream.on "error", (error) ->
@@ -94,6 +95,10 @@ domready ->
   #
   unless cookie.get 'geosockets-uuid'
     cookie.set 'geosockets-uuid', "user:" + uuid.v4()
+
+  # Determine the URL of the current page
+  # Look first for a canonical URL, then default to window.location.href
+  window.url = (document.querySelector('link[rel=canonical]') or window.location).href
 
   # Create the map
   #
