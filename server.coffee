@@ -7,7 +7,7 @@ UserStore = require('./lib/user-store')
 module.exports = ->
 
   # Abstracted Redis Store
-  @users = new UserStore()
+  @UserStore = new UserStore()
 
   # Express App (Static Frontend)
   @app = express()
@@ -26,7 +26,7 @@ module.exports = ->
     # When a user established a connection, send them
     # a list of all connected users.
     #
-    @users.getAll (err, users) ->
+    @UserStore.getAll (err, users) ->
       return console.error(err) if err
       socket.send JSON.stringify(users)
 
@@ -38,9 +38,9 @@ module.exports = ->
       # and notify all connected users.
       #
       if data and data.coords and data.coords.longitude
-        @users.add data, (err, users) ->
+        @UserStore.add data, (err, users) ->
           return console.error(err) if err
-          @users.getAll (err, users) ->
+          @UserStore.getAll (err, users) ->
             return console.error(err) if err
             for client in @socketServer.clients
               client.send JSON.stringify(users)
@@ -53,11 +53,11 @@ module.exports = ->
       # # Look in the socket cookie for UUID
       # uuid = cookie(socket.upgradeReq.headers.cookie).get('geosockets-uuid')
 
-      # @users.remove uuid, (err, users) ->
+      # @UserStore.remove uuid, (err, users) ->
       #   return console.error(err) if err
 
       #   # Send all users to all users!
-      #   @users.getAll (err, users) ->
+      #   @UserStore.getAll (err, users) ->
       #     return console.error(err) if err
       #     for client in @socketServer.clients
       #       client.send JSON.stringify(users)
