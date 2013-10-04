@@ -102,13 +102,8 @@ domready ->
   window.map = new Map()
 
   # Open the socket connection
-  if location.host.match(/localhost/)
-    # http://localhost:5000 -> ws://localhost:5000
-    host = location.origin.replace(/^http/, 'ws')
-  else
-    # Use wss:// on Heroku
-    host = "wss://geosockets.heroku.com"
-  window.socket = new WebSocket(host)
+  window.wsHost = location.origin.replace(/^http/, 'ws')
+  window.socket = new WebSocket(wsHost)
 
   socket.onopen = (event) ->
     # Start listening for browser geolocation events
