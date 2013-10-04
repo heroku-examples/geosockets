@@ -1,32 +1,31 @@
-domready = require 'domready'
-uuid = require 'node-uuid'
 cookie = require 'cookie-cutter'
+domready = require 'domready'
 GeolocationStream = require 'geolocation-stream'
-
-# mapbox.js auto-attaches to window.L (not cool)
-# https://github.com/mapbox/mapbox.js/pull/498
-require 'mapbox.js'
+uuid = require 'node-uuid'
+require 'mapbox.js' # auto-attaches to window.L
 
 class GeoPublisher
 
   constructor: (@socket) ->
     @position = null
-    @pingInterval = 20*1000
+    @keepaliveInterval = 20*1000 # 20 seconds
 
-    # Heroku closes the connection after 55 seconds of inactivity.
-    # Keep it alive by republishing periodically
-    setInterval (=>@publish()), @pingInterval
+    # Heroku closes the WebSocket connection after 55 seconds of
+    # inactivity; keep it alive by republishing periodically
+    setInterval (=>@publish()), @keepaliveInterval
 
     @stream = new GeolocationStream()
-
     @stream.on "data", (position) =>
       @position = position
       @position.uuid = cookie.get 'geosockets-uuid'
       @position.url = window.url
       @publish()
 
-    @stream.on "error", (error) ->
-      console.error error
+    @stream.on "error", (err) ->
+      console.error err
+
+  getLatLng: ->
+    [@position.coords.latitude, @position.coords.longitude]
 
   publish: ->
     if @socket.readyState is 1
@@ -35,13 +34,11 @@ class GeoPublisher
 class Map
 
   constructor: ->
-
-    @markers = []
+    @users = []
     @defaultLatLng = [40, -74.50]
     @defaultZoom = 4
 
     # Inject Mapbox CSS into the DOM
-    #
     link = document.createElement("link")
     link.rel = "stylesheet"
     link.type = "text/css"
@@ -53,41 +50,36 @@ class Map
       .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
       .setView(@defaultLatLng, @defaultZoom)
 
-  # Massage geodata array into a GeoJSON-friendly format
-  toGeoJSON: (data) ->
-    data.map (datum) ->
+  render: (users) =>
+
+    # Convert user location data into GeoJSON
+    users = users.map (user) ->
       type: "Feature"
       geometry:
         type: "Point"
-        coordinates: [datum.coords.longitude, datum.coords.latitude]
+        coordinates: [user.coords.longitude, user.coords.latitude]
       properties:
         title: "Someone"
         icon:
           iconUrl: "https://geosockets.herokuapp.com/marker.svg"
           iconSize: [10, 10]
           iconAnchor: [5, 5]
-          popupAnchor: [0, -25] # point from which the popup should open relative to the iconAnchor
-        # "marker-color": "#626AA3"
-        # "marker-size": "small"
-        # "marker-symbol": "marker"
+          popupAnchor: [0, -10]
 
-  render: (data) =>
-
-    # Set a custom icon on each marker based on feature properties
+    # Set a custom icon on each marker
     @map.markerLayer.on "layeradd", (e) ->
       marker = e.layer
       feature = marker.feature
       marker.setIcon L.icon(feature.properties.icon)
 
-    @map.markerLayer.setGeoJSON(@toGeoJSON(data))
+    # Render the latest markers
+    @map.markerLayer.setGeoJSON(users)
 
     # Pan to the user's location when the map is first rendered.
-    if @markers.length is 0
-      @map.panTo [geoPublisher.position.coords.latitude,
-        geoPublisher.position.coords.longitude]
+    @map.panTo(geoPublisher.getLatLng()) if @users.length is 0
 
     # Save the marker data for diffing the next time a broadcast is received.
-    @markers = data
+    @users = users
 
 domready ->
 
@@ -95,7 +87,7 @@ domready ->
     alert "Your browser doesn't support WebSockets."
     return
 
-  # Create a cookie that the server can use to uniquely identify this client.
+  # Create a cookie that the server can use to uniquely identify each client.
   unless cookie.get 'geosockets-uuid'
     cookie.set 'geosockets-uuid', uuid.v4()
 
@@ -107,6 +99,7 @@ domready ->
   window.map = new Map()
 
   # Open the socket connection
+  # http://localhost:5000 -> ws://localhost:5000
   if location.host.match(/localhost/)
     host = location.origin.replace(/^http/, 'ws')
   else
@@ -120,12 +113,11 @@ domready ->
     geoPublisher.publish()
 
   socket.onmessage = (event) ->
-    # Parse the JSON message and each stringified JSON object within it
-    data = JSON.parse(event.data)
-      .map (datum) -> JSON.parse(datum)
-    return if !data or data.length is 0
-    console.dir data
-    map.render(data)
+    # Parse the JSON message array and each stringified JSON object within it
+    users = JSON.parse(event.data).map(JSON.parse)
+    return if !users or users.length is 0
+    console.dir users
+    map.render(users)
 
   socket.onerror = (error) ->
     console.error error
