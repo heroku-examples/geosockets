@@ -69,6 +69,8 @@ class Map
       .map(@domId, 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
       .setView(@defaultLatLng, @defaultZoom)
 
+    @map.scrollWheelZoom.disable()
+
     @map.markers = L.mapbox.markerLayer()
       .addTo(@map)
 
