@@ -46,6 +46,7 @@
     };
 
     GeoPublisher.prototype.getLatLng = function() {
+      console.log("getLatLng", [this.position.latitude, this.position.longitude]);
       return [this.position.latitude, this.position.longitude];
     };
 
@@ -107,6 +108,7 @@
         if (_ref = user.uuid, __indexOf.call(renderedUUIDs, _ref) >= 0) {
           continue;
         }
+        console.log("render user", user.latitude, user.longitude);
         L.marker([user.latitude, user.longitude], this.markerOptions).addTo(this.map.markers);
         _results.push(this.users.push(user));
       }
@@ -165,7 +167,7 @@
 }).call(this);
 
 
-},{"cookie-cutter":2,"domready":3,"geolocation-stream":4,"mapbox.js":5,"node-uuid":6}],2:[function(require,module,exports){
+},{"cookie-cutter":2,"node-uuid":3,"geolocation-stream":4,"domready":5,"mapbox.js":6}],2:[function(require,module,exports){
 var exports = module.exports = function (doc) {
     if (!doc) doc = {};
     if (typeof doc === 'string') doc = { cookie: doc };
@@ -199,103 +201,7 @@ if (typeof document !== 'undefined') {
     exports.set = cookie.set;
 }
 
-},{}],3:[function(require,module,exports){
-/*!
-  * domready (c) Dustin Diaz 2012 - License MIT
-  */
-!function (name, definition) {
-  if (typeof module != 'undefined') module.exports = definition()
-  else if (typeof define == 'function' && typeof define.amd == 'object') define(definition)
-  else this[name] = definition()
-}('domready', function (ready) {
-
-  var fns = [], fn, f = false
-    , doc = document
-    , testEl = doc.documentElement
-    , hack = testEl.doScroll
-    , domContentLoaded = 'DOMContentLoaded'
-    , addEventListener = 'addEventListener'
-    , onreadystatechange = 'onreadystatechange'
-    , readyState = 'readyState'
-    , loadedRgx = hack ? /^loaded|^c/ : /^loaded|c/
-    , loaded = loadedRgx.test(doc[readyState])
-
-  function flush(f) {
-    loaded = 1
-    while (f = fns.shift()) f()
-  }
-
-  doc[addEventListener] && doc[addEventListener](domContentLoaded, fn = function () {
-    doc.removeEventListener(domContentLoaded, fn, f)
-    flush()
-  }, f)
-
-
-  hack && doc.attachEvent(onreadystatechange, fn = function () {
-    if (/^c/.test(doc[readyState])) {
-      doc.detachEvent(onreadystatechange, fn)
-      flush()
-    }
-  })
-
-  return (ready = hack ?
-    function (fn) {
-      self != top ?
-        loaded ? fn() : fns.push(fn) :
-        function () {
-          try {
-            testEl.doScroll('left')
-          } catch (e) {
-            return setTimeout(function() { ready(fn) }, 50)
-          }
-          fn()
-        }()
-    } :
-    function (fn) {
-      loaded ? fn() : fns.push(fn)
-    })
-})
-},{}],4:[function(require,module,exports){
-var stream = require('stream')
-var util = require('util')
-
-function GeolocationStream(options) {
-  var me = this
-  stream.Stream.call(me)
-  this.readable = true
-  this.startMonitoring(options)
-}
-
-util.inherits(GeolocationStream, stream.Stream)
-
-module.exports = function(options) {
-  return new GeolocationStream(options)
-}
-
-module.exports.GeolocationStream = GeolocationStream
-
-GeolocationStream.prototype.startMonitoring = function(options) {
-  this.watchID = navigator.geolocation.watchPosition(
-    this.onPosition.bind(this),
-    this.onError.bind(this),
-    options
-  )
-}
-
-GeolocationStream.prototype.stopMonitoring = function() {
-  navigator.geolocation.clearWatch(this.watchID)
-  this.emit('end')
-}
-
-GeolocationStream.prototype.onPosition = function(position) {
-  this.emit('data', position)
-}
-
-GeolocationStream.prototype.onError = function(position) {
-  this.emit('error', position)
-}
-
-},{"stream":7,"util":8}],9:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 require=(function(e,t,n,r){function i(r){if(!n[r]){if(!t[r]){if(e)return e(r);throw new Error("Cannot find module '"+r+"'")}var s=n[r]={exports:{}};t[r][0](function(e){var n=t[r][1][e];return i(n?n:e)},s,s.exports)}return n[r].exports}for(var s=0;s<r.length;s++)i(r[s]);return i})(typeof require!=="undefined"&&require,{1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -4160,7 +4066,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 },{}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],6:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 (function(Buffer){//     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -4408,7 +4314,103 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 }).call(this);
 
 })(require("__browserify_buffer").Buffer)
-},{"crypto":10,"__browserify_buffer":9}],7:[function(require,module,exports){
+},{"crypto":8,"__browserify_buffer":7}],4:[function(require,module,exports){
+var stream = require('stream')
+var util = require('util')
+
+function GeolocationStream(options) {
+  var me = this
+  stream.Stream.call(me)
+  this.readable = true
+  this.startMonitoring(options)
+}
+
+util.inherits(GeolocationStream, stream.Stream)
+
+module.exports = function(options) {
+  return new GeolocationStream(options)
+}
+
+module.exports.GeolocationStream = GeolocationStream
+
+GeolocationStream.prototype.startMonitoring = function(options) {
+  this.watchID = navigator.geolocation.watchPosition(
+    this.onPosition.bind(this),
+    this.onError.bind(this),
+    options
+  )
+}
+
+GeolocationStream.prototype.stopMonitoring = function() {
+  navigator.geolocation.clearWatch(this.watchID)
+  this.emit('end')
+}
+
+GeolocationStream.prototype.onPosition = function(position) {
+  this.emit('data', position)
+}
+
+GeolocationStream.prototype.onError = function(position) {
+  this.emit('error', position)
+}
+
+},{"stream":9,"util":10}],5:[function(require,module,exports){
+/*!
+  * domready (c) Dustin Diaz 2012 - License MIT
+  */
+!function (name, definition) {
+  if (typeof module != 'undefined') module.exports = definition()
+  else if (typeof define == 'function' && typeof define.amd == 'object') define(definition)
+  else this[name] = definition()
+}('domready', function (ready) {
+
+  var fns = [], fn, f = false
+    , doc = document
+    , testEl = doc.documentElement
+    , hack = testEl.doScroll
+    , domContentLoaded = 'DOMContentLoaded'
+    , addEventListener = 'addEventListener'
+    , onreadystatechange = 'onreadystatechange'
+    , readyState = 'readyState'
+    , loadedRgx = hack ? /^loaded|^c/ : /^loaded|c/
+    , loaded = loadedRgx.test(doc[readyState])
+
+  function flush(f) {
+    loaded = 1
+    while (f = fns.shift()) f()
+  }
+
+  doc[addEventListener] && doc[addEventListener](domContentLoaded, fn = function () {
+    doc.removeEventListener(domContentLoaded, fn, f)
+    flush()
+  }, f)
+
+
+  hack && doc.attachEvent(onreadystatechange, fn = function () {
+    if (/^c/.test(doc[readyState])) {
+      doc.detachEvent(onreadystatechange, fn)
+      flush()
+    }
+  })
+
+  return (ready = hack ?
+    function (fn) {
+      self != top ?
+        loaded ? fn() : fns.push(fn) :
+        function () {
+          try {
+            testEl.doScroll('left')
+          } catch (e) {
+            return setTimeout(function() { ready(fn) }, 50)
+          }
+          fn()
+        }()
+    } :
+    function (fn) {
+      loaded ? fn() : fns.push(fn)
+    })
+})
+},{}],9:[function(require,module,exports){
 var events = require('events');
 var util = require('util');
 
@@ -4529,7 +4531,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":11,"util":8}],8:[function(require,module,exports){
+},{"events":11,"util":10}],10:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -4882,7 +4884,7 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":11}],5:[function(require,module,exports){
+},{"events":11}],6:[function(require,module,exports){
 require('./leaflet');
 require('./mapbox');
 
@@ -5126,7 +5128,7 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":14}],10:[function(require,module,exports){
+},{"__browserify_process":14}],8:[function(require,module,exports){
 var sha = require('./sha')
 var rng = require('./rng')
 var md5 = require('./md5')
@@ -5202,45 +5204,7 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./rng":15,"./sha":16,"./md5":17}],15:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
-
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
-},{}],16:[function(require,module,exports){
+},{"./sha":15,"./md5":16,"./rng":17}],15:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5452,10 +5416,7 @@ function binb2b64(binarray)
 }
 
 
-},{}],12:[function(require,module,exports){
-window.L = require('leaflet/dist/leaflet-src');
-
-},{"leaflet/dist/leaflet-src":18}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
  * Digest Algorithm, as defined in RFC 1321.
@@ -5841,7 +5802,48 @@ exports.hex_md5 = hex_md5;
 exports.b64_md5 = b64_md5;
 exports.any_md5 = any_md5;
 
-},{}],19:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
+},{}],12:[function(require,module,exports){
+window.L = require('leaflet/dist/leaflet-src');
+
+},{"leaflet/dist/leaflet-src":18}],19:[function(require,module,exports){
 module.exports={
   "author": {
     "name": "MapBox"

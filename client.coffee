@@ -32,6 +32,7 @@ class GeoPublisher
     @position.latitude and @socket.readyState is 1
 
   getLatLng: =>
+    console.log "getLatLng", [@position.latitude, @position.longitude]
     [@position.latitude, @position.longitude]
 
   publish: =>
@@ -85,6 +86,7 @@ class Map
       continue if user.uuid in renderedUUIDs
 
       # Add marker to map
+      console.log "render user", user.latitude, user.longitude
       L.marker([user.latitude, user.longitude], @markerOptions)
         .addTo(@map.markers)
 

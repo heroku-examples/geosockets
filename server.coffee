@@ -24,6 +24,7 @@ module.exports = ->
   @socketServer.on "connection", (socket) =>
     socket.on 'message', (data, flags) =>
       user = JSON.parse(data)
+      console.log "user", user
       @UserStore.add user, (err, users) ->
         return console.error(err) if err
         @UserStore.getByUrl user.url, (err, users) ->
