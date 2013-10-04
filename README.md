@@ -1,35 +1,46 @@
-# geosockets
+# Geosockets
 
-geosockets is a node webserver and javascript browser client for rendering
-any site's visitors on a map in realtime using WebSockets.
+Geosockets is a node webserver and javascript browser client for rendering website
+visitors on a map in realtime using WebSockets and the browser's Geolocation API.
 
 See the demo app at [geosockets.heroku.com](https://geosockets.heroku.com).
 
-### server.coffee
+### Using the Client Script on Your Site
 
-The server is a node app powered by [express 3](http://expressjs.com/guide.html), node's native [http](http://nodejs.org/api/http.html) module, and the [einaros/ws](https://github.com/einaros/ws/blob/master/doc/ws.md) WebSocket implementation. Express is used to serve the static frontend in `/public`.
+The Geosockets javascript client can be used on any website:
 
-> The twelve-factor app never assumes that anything cached in memory or on disk will be available on a future request or job.
+```html
+<script src="https://geosockets.heroku.com/client.js"></script>
+<div id="geosockets"></div>
+```
 
-Redis is used to persist visitor data. This allows the dynos running your app to act as [stateless processes](http://12factor.net/processes). In the context of Heroku, this means designing your app to withstand changes like restarting processes or scaling dynos up or down.
+Use CSS to configure the size and position of the map container:
 
-### client.coffee
+```css
+#geosockets {
+  width: 100%;
+  height: 100%;
+}
+```
 
-[Browserify](https://github.com/substack/node-browserify#readme) and [Grunt](http://gruntjs.com/) are used to compile
-server.coffee into a single browser-ready javascript file.
+### The Server
 
-When the client is first run in the browser, a [UUID](https://github.com/broofa/node-uuid#readme) token is generated
-and stored in a cookie which is passed to the server within the headers of each WebSocket message. This gives the server a consistent way to identify each user.
+[server.coffee](https://github.com/heroku-examples/geosockets/blob/master/server.coffee) is a node app powered by [express 3](http://expressjs.com/guide.html), node's native [http](http://nodejs.org/api/http.html) module, and the [einaros/ws](https://github.com/einaros/ws/blob/master/doc/ws.md) WebSocket implementation. Express is used to serve the static frontend in `/public`.
 
-The client uses the [browser's geolocation API](https://www.google.com/search?q=browser%20geolocation%20api) and the
-[geolocation-stream](https://github.com/maxogden/geolocation-stream#readme) node module to determine the user's physical location, continually listening for location updates in realtime.
+When building web apps designed to scale, you should never assume that anything cached in memory or on disk will be available on a future request or job. Geosockets uses Redis to persist visitor data, treating Dynos as [stateless processes](http://12factor.net/processes): changes in the app's [Dyno formation](https://devcenter.heroku.com/articles/scaling#dyno-formation) should be impercetible to users.
 
-Once the WebSocket connection is establised, the client broadcasts its location to the server.
+### The Client
 
-The client listens for messages from the server, rendering a marker on the map for each new visitor,
-and removing markers as visitors leave the site.
+[client.coffee](https://github.com/heroku-examples/geosockets/blob/master/client.coffee) is also written as a node app. [Browserify](https://github.com/substack/node-browserify#readme) and [Grunt](http://gruntjs.com/) are used to compile the client into a single browser-ready javascript file.
 
-### Running the App Locally
+When the client is first run in the browser, a [UUID](https://github.com/broofa/node-uuid#readme) token is generated and stored in a cookie which is passed to the server in the headers of each WebSocket message. This gives the server a consistent way to identify each user.
+
+The client uses the [browser's geolocation API](https://www.google.com/search?q=browser%20geolocation%20api) and the [geolocation-stream](https://github.com/maxogden/geolocation-stream#readme) node module to determine the user's physical location, continually listening for location updates in realtime.
+
+Once the WebSocket connection is establised, the client broadcasts its location to the server. The client then listens
+for messages from the server, rendering and removing markers from the map as site visitors come and go.
+
+### Running Geosockets Locally
 
 If you're new to Heroku or Node.js development, you'll need to install a few things first:
 
@@ -51,32 +62,7 @@ Fire up redis, a grunt watcher, and the node webserver at [localhost:5000](http:
 foreman start
 ```
 
-### Using the Client Script on Your Site
-
-The Geosockets client can be used on any website. Just drop in the hotlinked script tag
-and create a DOM element with an id of `geosockets` to contain the map.
-
-```html
-<script src="https://geosockets.heroku.com/client.js"></script>
-<div id="geosockets"></div>
-```
-
-Use CSS to configure the size and position of the map:
-
-```css
-#geosockets {
-  width: 100%;
-  height: 100%;
-}
-```
-
-### Testing
-
-```
-npm test
-```
-
-### Deploying to Heroku
+### Deploying Geosockets to Heroku
 
 ```
 heroku create my-geosockets-app
