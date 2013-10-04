@@ -11,6 +11,12 @@ class GeoPublisher
 
   constructor: (@socket) ->
     @position = null
+    @pingInterval = 20*1000
+
+    # Heroku closes the connection after 55 seconds of inactivity.
+    # Keep it alive by republishing periodically
+    setInterval (=>@publish()), @pingInterval
+
     @stream = new GeolocationStream()
 
     @stream.on "data", (position) =>
