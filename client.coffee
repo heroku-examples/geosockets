@@ -5,11 +5,10 @@ uuid = require 'node-uuid'
 require 'mapbox.js' # auto-attaches to window.L
 
 class GeoPublisher
+  position: null
+  keepaliveInterval: 20*1000
 
   constructor: (@socket) ->
-    @position = null
-    @keepaliveInterval = 20*1000 # 20 seconds
-
     # Heroku closes the WebSocket connection after 55 seconds of
     # inactivity; keep it alive by republishing periodically
     setInterval (=>@publish()), @keepaliveInterval
@@ -32,18 +31,18 @@ class GeoPublisher
       @socket.send JSON.stringify(@position)
 
 class Map
-
   users: []
   markers: []
   defaultLatLng: [40, -74.50]
   defaultZoom: 4
   markerOptions:
     clickable: false
+    keyboard: false
+    opacity: 0.3
     icon: L.icon
       iconUrl: "https://geosockets.herokuapp.com/marker.svg"
       iconSize: [10, 10]
       iconAnchor: [5, 5]
-      popupAnchor: [0, -10]
 
   constructor: ->
 
@@ -59,20 +58,29 @@ class Map
       .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
       .setView(@defaultLatLng, @defaultZoom)
 
-    @map.markers = L.mapbox.markerLayer().addTo(@map)
+    @map.markers = L.mapbox.markerLayer()
+      .addTo(@map)
 
   render: (users) =>
 
+    # Who's already on the map?
+    renderedUUIDs = @users.map (user) -> user.uuid
+
+    # Pan to the user's location when the map is first rendered.
+    if renderedUUIDs.length is 0
+      @map.panTo(geoPublisher.getLatLng())
+
     for user in users
+      # Skip this user if they're already on the map
+      continue if user.uuid in renderedUUIDs
+
+      # Add marker to map
       coordinates = [user.coords.latitude, user.coords.longitude]
       L.marker(coordinates, @markerOptions)
         .addTo(@map.markers)
 
-    # Pan to the user's location when the map is first rendered.
-    @map.panTo(geoPublisher.getLatLng()) if @users.length is 0
-
-    # Save user data for diffing the next time a broadcast is received.
-    @users = users
+      # Add this user to list of already rendered users
+      @users.push(user)
 
 domready ->
 
