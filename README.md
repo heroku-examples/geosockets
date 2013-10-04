@@ -3,14 +3,19 @@
 Geosockets is a node webserver and javascript browser client for rendering website
 visitors on a map in realtime using WebSockets and the browser's Geolocation API.
 
-See the demo app at [geosockets.heroku.com](https://geosockets.heroku.com).
+See the demo app at [geosockets.herokuapp.com](https://geosockets.herokuapp.com).
 
 ### Using the Client Script on Your Site
 
 The Geosockets javascript client can be used on any website:
 
 ```html
-<script src="https://geosockets.heroku.com/client.js"></script>
+<script src="https://geosockets.herokuapp.com/client.js"></script>
+<script>
+  window.geosocket = new Geosocket({
+    host: "wss://geosockets.herokuapp.com" // (default)
+  });
+</script>
 <div id="geosockets"></div>
 ```
 

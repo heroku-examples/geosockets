@@ -90,7 +90,7 @@ class Map
 class Geosocket
 
   constructor: (@config={}) ->
-    @config.wsHost or= location.origin.replace(/^http/, 'ws')
+    @config.host or= location.origin.replace(/^http/, 'ws')
     @config.domId or= "geosockets"
 
     domready =>
@@ -111,8 +111,7 @@ class Geosocket
       window.map = new Map(@config.domId)
 
       # Open the socket connection
-      window.wsHost =
-      window.socket = new WebSocket(@config.wsHost)
+      window.socket = new WebSocket(@config.host)
 
       socket.onopen = (event) ->
         # Start listening for browser geolocation events

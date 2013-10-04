@@ -121,7 +121,7 @@
       var _base, _base1,
         _this = this;
       this.config = config != null ? config : {};
-      (_base = this.config).wsHost || (_base.wsHost = location.origin.replace(/^http/, 'ws'));
+      (_base = this.config).host || (_base.host = location.origin.replace(/^http/, 'ws'));
       (_base1 = this.config).domId || (_base1.domId = "geosockets");
       domready(function() {
         if (!window['WebSocket']) {
@@ -133,7 +133,7 @@
         }
         window.url = (document.querySelector('link[rel=canonical]') || window.location).href;
         window.map = new Map(_this.config.domId);
-        window.wsHost = window.socket = new WebSocket(_this.config.wsHost);
+        window.socket = new WebSocket(_this.config.host);
         socket.onopen = function(event) {
           return window.geoPublisher = new GeoPublisher(socket);
         };
@@ -164,7 +164,7 @@
 }).call(this);
 
 
-},{"domready":2,"cookie-cutter":3,"node-uuid":4,"geolocation-stream":5,"mapbox.js":6}],3:[function(require,module,exports){
+},{"cookie-cutter":2,"domready":3,"geolocation-stream":4,"node-uuid":5,"mapbox.js":6}],2:[function(require,module,exports){
 var exports = module.exports = function (doc) {
     if (!doc) doc = {};
     if (typeof doc === 'string') doc = { cookie: doc };
@@ -198,7 +198,7 @@ if (typeof document !== 'undefined') {
     exports.set = cookie.set;
 }
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -254,7 +254,47 @@ if (typeof document !== 'undefined') {
       loaded ? fn() : fns.push(fn)
     })
 })
-},{}],7:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
+var stream = require('stream')
+var util = require('util')
+
+function GeolocationStream(options) {
+  var me = this
+  stream.Stream.call(me)
+  this.readable = true
+  this.startMonitoring(options)
+}
+
+util.inherits(GeolocationStream, stream.Stream)
+
+module.exports = function(options) {
+  return new GeolocationStream(options)
+}
+
+module.exports.GeolocationStream = GeolocationStream
+
+GeolocationStream.prototype.startMonitoring = function(options) {
+  this.watchID = navigator.geolocation.watchPosition(
+    this.onPosition.bind(this),
+    this.onError.bind(this),
+    options
+  )
+}
+
+GeolocationStream.prototype.stopMonitoring = function() {
+  navigator.geolocation.clearWatch(this.watchID)
+  this.emit('end')
+}
+
+GeolocationStream.prototype.onPosition = function(position) {
+  this.emit('data', position)
+}
+
+GeolocationStream.prototype.onError = function(position) {
+  this.emit('error', position)
+}
+
+},{"stream":7,"util":8}],9:[function(require,module,exports){
 require=(function(e,t,n,r){function i(r){if(!n[r]){if(!t[r]){if(e)return e(r);throw new Error("Cannot find module '"+r+"'")}var s=n[r]={exports:{}};t[r][0](function(e){var n=t[r][1][e];return i(n?n:e)},s,s.exports)}return n[r].exports}for(var s=0;s<r.length;s++)i(r[s]);return i})(typeof require!=="undefined"&&require,{1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -4119,7 +4159,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 },{}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 (function(Buffer){//     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -4367,47 +4407,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 }).call(this);
 
 })(require("__browserify_buffer").Buffer)
-},{"crypto":8,"__browserify_buffer":7}],5:[function(require,module,exports){
-var stream = require('stream')
-var util = require('util')
-
-function GeolocationStream(options) {
-  var me = this
-  stream.Stream.call(me)
-  this.readable = true
-  this.startMonitoring(options)
-}
-
-util.inherits(GeolocationStream, stream.Stream)
-
-module.exports = function(options) {
-  return new GeolocationStream(options)
-}
-
-module.exports.GeolocationStream = GeolocationStream
-
-GeolocationStream.prototype.startMonitoring = function(options) {
-  this.watchID = navigator.geolocation.watchPosition(
-    this.onPosition.bind(this),
-    this.onError.bind(this),
-    options
-  )
-}
-
-GeolocationStream.prototype.stopMonitoring = function() {
-  navigator.geolocation.clearWatch(this.watchID)
-  this.emit('end')
-}
-
-GeolocationStream.prototype.onPosition = function(position) {
-  this.emit('data', position)
-}
-
-GeolocationStream.prototype.onError = function(position) {
-  this.emit('error', position)
-}
-
-},{"stream":9,"util":10}],9:[function(require,module,exports){
+},{"crypto":10,"__browserify_buffer":9}],7:[function(require,module,exports){
 var events = require('events');
 var util = require('util');
 
@@ -4528,7 +4528,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":11,"util":10}],10:[function(require,module,exports){
+},{"events":11,"util":8}],8:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -5125,7 +5125,7 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":14}],8:[function(require,module,exports){
+},{"__browserify_process":14}],10:[function(require,module,exports){
 var sha = require('./sha')
 var rng = require('./rng')
 var md5 = require('./md5')
@@ -5201,45 +5201,7 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./rng":15,"./sha":16,"./md5":17}],15:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
-
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
-},{}],16:[function(require,module,exports){
+},{"./sha":15,"./rng":16,"./md5":17}],15:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5451,6 +5413,44 @@ function binb2b64(binarray)
 }
 
 
+},{}],16:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
 },{}],17:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
@@ -16435,7 +16435,7 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":34,"./tile_layer":23,"./marker_layer":29,"./grid_layer":28,"./grid_control":27,"./load_tilejson":37,"./legend_control":25}],34:[function(require,module,exports){
+},{"./util":34,"./tile_layer":23,"./marker_layer":29,"./grid_layer":28,"./grid_control":27,"./legend_control":25,"./load_tilejson":37}],34:[function(require,module,exports){
 'use strict';
 
 module.exports = {
