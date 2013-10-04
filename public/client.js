@@ -1,6 +1,6 @@
 ;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
 (function() {
-  var GeoPublisher, GeolocationStream, Map, cookie, domready, uuid,
+  var GeoPublisher, GeolocationStream, Geosocket, Map, cookie, domready, uuid,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -71,21 +71,23 @@
       keyboard: false,
       opacity: 1,
       icon: L.icon({
-        iconUrl: "https://geosockets.heroku.com/marker.svg",
+        iconUrl: "https://geosockets.herokuapp.com/marker.svg",
         iconSize: [10, 10],
         iconAnchor: [5, 5]
       })
     };
 
-    function Map() {
-      this.render = __bind(this.render, this);
+    function Map(domId) {
       var link;
+      this.domId = domId;
+      this.render = __bind(this.render, this);
+      this.domId = this.domId.replace(/#/, '');
       link = document.createElement("link");
       link.rel = "stylesheet";
       link.type = "text/css";
       link.href = "https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css";
       document.body.appendChild(link);
-      this.map = L.mapbox.map('geosockets', 'examples.map-20v6611k').setView(this.defaultLatLng, this.defaultZoom);
+      this.map = L.mapbox.map(this.domId, 'examples.map-20v6611k').setView(this.defaultLatLng, this.defaultZoom);
       this.map.markers = L.mapbox.markerLayer().addTo(this.map);
     }
 
@@ -114,42 +116,89 @@
 
   })();
 
-  domready(function() {
-    if (!window['WebSocket']) {
-      alert("Your browser doesn't support WebSockets.");
-      return;
+  Geosocket = (function() {
+    function Geosocket(config) {
+      var _base, _base1,
+        _this = this;
+      this.config = config != null ? config : {};
+      (_base = this.config).wsHost || (_base.wsHost = location.origin.replace(/^http/, 'ws'));
+      (_base1 = this.config).domId || (_base1.domId = "geosockets");
+      domready(function() {
+        if (!window['WebSocket']) {
+          alert("Your browser doesn't support WebSockets.");
+          return;
+        }
+        if (!cookie.get('geosockets-uuid')) {
+          cookie.set('geosockets-uuid', uuid.v4());
+        }
+        window.url = (document.querySelector('link[rel=canonical]') || window.location).href;
+        window.map = new Map(_this.config.domId);
+        window.wsHost = window.socket = new WebSocket(_this.config.wsHost);
+        socket.onopen = function(event) {
+          return window.geoPublisher = new GeoPublisher(socket);
+        };
+        socket.onmessage = function(event) {
+          var users;
+          users = JSON.parse(event.data).map(JSON.parse);
+          if (!users || users.length === 0) {
+            return;
+          }
+          console.dir(users);
+          return map.render(users);
+        };
+        socket.onerror = function(error) {
+          return console.error(error);
+        };
+        return socket.onclose = function(event) {
+          return console.log('socket closed', event);
+        };
+      });
     }
-    if (!cookie.get('geosockets-uuid')) {
-      cookie.set('geosockets-uuid', uuid.v4());
-    }
-    window.url = (document.querySelector('link[rel=canonical]') || window.location).href;
-    window.map = new Map();
-    window.wsHost = location.origin.replace(/^http/, 'ws');
-    window.socket = new WebSocket(wsHost);
-    socket.onopen = function(event) {
-      return window.geoPublisher = new GeoPublisher(socket);
-    };
-    socket.onmessage = function(event) {
-      var users;
-      users = JSON.parse(event.data).map(JSON.parse);
-      if (!users || users.length === 0) {
-        return;
-      }
-      console.dir(users);
-      return map.render(users);
-    };
-    socket.onerror = function(error) {
-      return console.error(error);
-    };
-    return socket.onclose = function(event) {
-      return console.log('socket closed', event);
-    };
-  });
+
+    return Geosocket;
+
+  })();
+
+  window.Geosocket = Geosocket;
 
 }).call(this);
 
 
-},{"domready":2,"geolocation-stream":3,"cookie-cutter":4,"node-uuid":5,"mapbox.js":6}],2:[function(require,module,exports){
+},{"domready":2,"cookie-cutter":3,"node-uuid":4,"geolocation-stream":5,"mapbox.js":6}],3:[function(require,module,exports){
+var exports = module.exports = function (doc) {
+    if (!doc) doc = {};
+    if (typeof doc === 'string') doc = { cookie: doc };
+    if (doc.cookie === undefined) doc.cookie = '';
+    
+    var self = {};
+    self.get = function (key) {
+        var splat = doc.cookie.split(/;\s*/);
+        for (var i = 0; i < splat.length; i++) {
+            var ps = splat[i].split('=');
+            var k = unescape(ps[0]);
+            if (k === key) return unescape(ps[1]);
+        }
+        return undefined;
+    };
+    
+    self.set = function (key, value, opts) {
+        if (!opts) opts = {};
+        var s = escape(key) + '=' + escape(value);
+        if (opts.expires) s += '; expires=' + opts.expires;
+        if (opts.path) s += '; path=' + escape(opts.path);
+        doc.cookie = s;
+        return s;
+    };
+    return self;
+};
+
+if (typeof document !== 'undefined') {
+    var cookie = exports(document);
+    exports.get = cookie.get;
+    exports.set = cookie.set;
+}
+
+},{}],2:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -205,81 +254,7 @@
       loaded ? fn() : fns.push(fn)
     })
 })
-},{}],3:[function(require,module,exports){
-var stream = require('stream')
-var util = require('util')
-
-function GeolocationStream(options) {
-  var me = this
-  stream.Stream.call(me)
-  this.readable = true
-  this.startMonitoring(options)
-}
-
-util.inherits(GeolocationStream, stream.Stream)
-
-module.exports = function(options) {
-  return new GeolocationStream(options)
-}
-
-module.exports.GeolocationStream = GeolocationStream
-
-GeolocationStream.prototype.startMonitoring = function(options) {
-  this.watchID = navigator.geolocation.watchPosition(
-    this.onPosition.bind(this),
-    this.onError.bind(this),
-    options
-  )
-}
-
-GeolocationStream.prototype.stopMonitoring = function() {
-  navigator.geolocation.clearWatch(this.watchID)
-  this.emit('end')
-}
-
-GeolocationStream.prototype.onPosition = function(position) {
-  this.emit('data', position)
-}
-
-GeolocationStream.prototype.onError = function(position) {
-  this.emit('error', position)
-}
-
-},{"stream":7,"util":8}],4:[function(require,module,exports){
-var exports = module.exports = function (doc) {
-    if (!doc) doc = {};
-    if (typeof doc === 'string') doc = { cookie: doc };
-    if (doc.cookie === undefined) doc.cookie = '';
-    
-    var self = {};
-    self.get = function (key) {
-        var splat = doc.cookie.split(/;\s*/);
-        for (var i = 0; i < splat.length; i++) {
-            var ps = splat[i].split('=');
-            var k = unescape(ps[0]);
-            if (k === key) return unescape(ps[1]);
-        }
-        return undefined;
-    };
-    
-    self.set = function (key, value, opts) {
-        if (!opts) opts = {};
-        var s = escape(key) + '=' + escape(value);
-        if (opts.expires) s += '; expires=' + opts.expires;
-        if (opts.path) s += '; path=' + escape(opts.path);
-        doc.cookie = s;
-        return s;
-    };
-    return self;
-};
-
-if (typeof document !== 'undefined') {
-    var cookie = exports(document);
-    exports.get = cookie.get;
-    exports.set = cookie.set;
-}
-
-},{}],9:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 require=(function(e,t,n,r){function i(r){if(!n[r]){if(!t[r]){if(e)return e(r);throw new Error("Cannot find module '"+r+"'")}var s=n[r]={exports:{}};t[r][0](function(e){var n=t[r][1][e];return i(n?n:e)},s,s.exports)}return n[r].exports}for(var s=0;s<r.length;s++)i(r[s]);return i})(typeof require!=="undefined"&&require,{1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -4144,7 +4119,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 },{}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function(Buffer){//     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -4392,7 +4367,47 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 }).call(this);
 
 })(require("__browserify_buffer").Buffer)
-},{"crypto":10,"__browserify_buffer":9}],7:[function(require,module,exports){
+},{"crypto":8,"__browserify_buffer":7}],5:[function(require,module,exports){
+var stream = require('stream')
+var util = require('util')
+
+function GeolocationStream(options) {
+  var me = this
+  stream.Stream.call(me)
+  this.readable = true
+  this.startMonitoring(options)
+}
+
+util.inherits(GeolocationStream, stream.Stream)
+
+module.exports = function(options) {
+  return new GeolocationStream(options)
+}
+
+module.exports.GeolocationStream = GeolocationStream
+
+GeolocationStream.prototype.startMonitoring = function(options) {
+  this.watchID = navigator.geolocation.watchPosition(
+    this.onPosition.bind(this),
+    this.onError.bind(this),
+    options
+  )
+}
+
+GeolocationStream.prototype.stopMonitoring = function() {
+  navigator.geolocation.clearWatch(this.watchID)
+  this.emit('end')
+}
+
+GeolocationStream.prototype.onPosition = function(position) {
+  this.emit('data', position)
+}
+
+GeolocationStream.prototype.onError = function(position) {
+  this.emit('error', position)
+}
+
+},{"stream":9,"util":10}],9:[function(require,module,exports){
 var events = require('events');
 var util = require('util');
 
@@ -4513,7 +4528,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":11,"util":8}],8:[function(require,module,exports){
+},{"events":11,"util":10}],10:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -5110,7 +5125,7 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":14}],10:[function(require,module,exports){
+},{"__browserify_process":14}],8:[function(require,module,exports){
 var sha = require('./sha')
 var rng = require('./rng')
 var md5 = require('./md5')
@@ -5186,7 +5201,45 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./sha":15,"./rng":16,"./md5":17}],15:[function(require,module,exports){
+},{"./rng":15,"./sha":16,"./md5":17}],15:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
+},{}],16:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5398,44 +5451,6 @@ function binb2b64(binarray)
 }
 
 
-},{}],16:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
-
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
 },{}],17:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
@@ -5871,26 +5886,6 @@ module.exports={
   "_id": "mapbox.js@1.3.1",
   "_from": "mapbox.js@"
 }
-
-},{}],20:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-
-    HTTP_URLS: [
-        'http://a.tiles.mapbox.com/v3/',
-        'http://b.tiles.mapbox.com/v3/',
-        'http://c.tiles.mapbox.com/v3/',
-        'http://d.tiles.mapbox.com/v3/'],
-
-    FORCE_HTTPS: false,
-
-    HTTPS_URLS: [
-        'https://a.tiles.mapbox.com/v3/',
-        'https://b.tiles.mapbox.com/v3/',
-        'https://c.tiles.mapbox.com/v3/',
-        'https://d.tiles.mapbox.com/v3/']
-};
 
 },{}],18:[function(require,module,exports){
 (function(){/*
@@ -14758,6 +14753,26 @@ L.Map.include({
 
 }(window, document));
 })()
+},{}],20:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+
+    HTTP_URLS: [
+        'http://a.tiles.mapbox.com/v3/',
+        'http://b.tiles.mapbox.com/v3/',
+        'http://c.tiles.mapbox.com/v3/',
+        'http://d.tiles.mapbox.com/v3/'],
+
+    FORCE_HTTPS: false,
+
+    HTTPS_URLS: [
+        'https://a.tiles.mapbox.com/v3/',
+        'https://b.tiles.mapbox.com/v3/',
+        'https://c.tiles.mapbox.com/v3/',
+        'https://d.tiles.mapbox.com/v3/']
+};
+
 },{}],13:[function(require,module,exports){
 // Hardcode image path, because Leaflet's autodetection
 // fails, because mapbox.js is not named leaflet.js
@@ -14781,7 +14796,7 @@ L.mapbox = module.exports = {
     template: require('mustache').to_html
 };
 
-},{"./package.json":19,"./src/geocoder":21,"./src/marker":22,"./src/tile_layer":23,"./src/share_control":24,"./src/legend_control":25,"./src/geocoder_control":26,"./src/grid_control":27,"./src/grid_layer":28,"./src/marker_layer":29,"./src/map":30,"./src/sanitize":31,"./src/config":20,"mustache":32}],31:[function(require,module,exports){
+},{"./package.json":19,"./src/geocoder":21,"./src/marker":22,"./src/tile_layer":23,"./src/share_control":24,"./src/legend_control":25,"./src/geocoder_control":26,"./src/grid_control":27,"./src/grid_layer":28,"./src/marker_layer":29,"./src/map":30,"./src/config":20,"./src/sanitize":31,"mustache":32}],31:[function(require,module,exports){
 'use strict';
 
 var html_sanitize = require('../ext/sanitizer/html-sanitizer-bundle.js');
@@ -15508,7 +15523,7 @@ module.exports = function(_) {
     return geocoder;
 };
 
-},{"./url":34,"./util":35,"./request":36}],22:[function(require,module,exports){
+},{"./util":34,"./url":35,"./request":36}],22:[function(require,module,exports){
 'use strict';
 
 var url = require('./url'),
@@ -15571,7 +15586,7 @@ module.exports = {
     createPopup: createPopup
 };
 
-},{"./url":34,"./sanitize":31}],23:[function(require,module,exports){
+},{"./url":35,"./sanitize":31}],23:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -15665,7 +15680,7 @@ module.exports = function(_, options) {
     return new TileLayer(_, options);
 };
 
-},{"./util":35,"./url":34,"./load_tilejson":37}],24:[function(require,module,exports){
+},{"./util":34,"./url":35,"./load_tilejson":37}],24:[function(require,module,exports){
 'use strict';
 
 var ShareControl = L.Control.extend({
@@ -16193,7 +16208,7 @@ module.exports = function(_, options) {
     return new GridLayer(_, options);
 };
 
-},{"./util":35,"./url":34,"./request":36,"./grid":38,"./load_tilejson":37}],29:[function(require,module,exports){
+},{"./util":34,"./url":35,"./request":36,"./grid":38,"./load_tilejson":37}],29:[function(require,module,exports){
 'use strict';
 
 var util = require('./util');
@@ -16298,7 +16313,7 @@ module.exports = function(_, options) {
     return new MarkerLayer(_, options);
 };
 
-},{"./util":35,"./url":34,"./request":36,"./sanitize":31,"./marker":22}],30:[function(require,module,exports){
+},{"./util":34,"./url":35,"./request":36,"./marker":22,"./sanitize":31}],30:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16420,7 +16435,7 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":35,"./tile_layer":23,"./grid_layer":28,"./grid_control":27,"./marker_layer":29,"./legend_control":25,"./load_tilejson":37}],35:[function(require,module,exports){
+},{"./util":34,"./tile_layer":23,"./marker_layer":29,"./grid_layer":28,"./grid_control":27,"./load_tilejson":37,"./legend_control":25}],34:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -18921,7 +18936,7 @@ module.exports = function(data) {
     };
 };
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 'use strict';
 
 var config = require('./config');
@@ -18989,7 +19004,7 @@ module.exports = {
     }
 };
 
-},{"./request":36,"./util":35,"./url":34}],27:[function(require,module,exports){
+},{"./request":36,"./url":35,"./util":34}],27:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -19183,7 +19198,7 @@ module.exports = function(_, options) {
     return new GridControl(_, options);
 };
 
-},{"./util":35,"./sanitize":31,"mustache":32}],36:[function(require,module,exports){
+},{"./util":34,"./sanitize":31,"mustache":32}],36:[function(require,module,exports){
 'use strict';
 
 var corslite = require('corslite'),
@@ -19207,7 +19222,7 @@ module.exports = function(url, callback) {
     });
 };
 
-},{"./util":35,"corslite":39,"json3":40}],39:[function(require,module,exports){
+},{"./util":34,"corslite":39,"json3":40}],39:[function(require,module,exports){
 function xhr(url, callback, cors) {
 
     if (typeof window.XMLHttpRequest === 'undefined') {

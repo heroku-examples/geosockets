@@ -42,11 +42,14 @@ class Map
     keyboard: false
     opacity: 1
     icon: L.icon
-      iconUrl: "https://geosockets.heroku.com/marker.svg"
+      iconUrl: "https://geosockets.herokuapp.com/marker.svg"
       iconSize: [10, 10]
       iconAnchor: [5, 5]
 
-  constructor: ->
+  constructor: (@domId) ->
+
+    # Remove '#' from DOM id, if present
+    @domId = @domId.replace(/#/, '')
 
     # Inject Mapbox CSS into the DOM
     link = document.createElement("link")
@@ -57,7 +60,7 @@ class Map
 
     # Create the Mapbox map
     @map = L.mapbox
-      .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
+      .map(@domId, 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
       .setView(@defaultLatLng, @defaultZoom)
 
     @map.markers = L.mapbox.markerLayer()
@@ -84,40 +87,48 @@ class Map
       # Add this user to list of already rendered users
       @users.push(user)
 
-domready ->
+class Geosocket
 
-  unless window['WebSocket']
-    alert "Your browser doesn't support WebSockets."
-    return
+  constructor: (@config={}) ->
+    @config.wsHost or= location.origin.replace(/^http/, 'ws')
+    @config.domId or= "geosockets"
 
-  # Create a cookie that the server can use to uniquely identify each client.
-  unless cookie.get 'geosockets-uuid'
-    cookie.set 'geosockets-uuid', uuid.v4()
+    domready =>
 
-  # Determine the URL of the current page
-  # Look for a canonical URL, then default to window.location.href
-  window.url = (document.querySelector('link[rel=canonical]') or window.location).href
+      unless window['WebSocket']
+        alert "Your browser doesn't support WebSockets."
+        return
 
-  # Create the map
-  window.map = new Map()
+      # Create a cookie that the server can use to uniquely identify each client.
+      unless cookie.get 'geosockets-uuid'
+        cookie.set 'geosockets-uuid', uuid.v4()
 
-  # Open the socket connection
-  window.wsHost = location.origin.replace(/^http/, 'ws')
-  window.socket = new WebSocket(wsHost)
+      # Determine the URL of the current page
+      # Look for a canonical URL, then default to window.location.href
+      window.url = (document.querySelector('link[rel=canonical]') or window.location).href
 
-  socket.onopen = (event) ->
-    # Start listening for browser geolocation events
-    window.geoPublisher = new GeoPublisher(socket)
+      # Create the map
+      window.map = new Map(@config.domId)
 
-  socket.onmessage = (event) ->
-    # Parse the JSON message array and each stringified JSON object within it
-    users = JSON.parse(event.data).map(JSON.parse)
-    return if !users or users.length is 0
-    console.dir users
-    map.render(users)
+      # Open the socket connection
+      window.wsHost =
+      window.socket = new WebSocket(@config.wsHost)
 
-  socket.onerror = (error) ->
-    console.error error
+      socket.onopen = (event) ->
+        # Start listening for browser geolocation events
+        window.geoPublisher = new GeoPublisher(socket)
 
-  socket.onclose = (event) ->
-    console.log 'socket closed', event
+      socket.onmessage = (event) ->
+        # Parse the JSON message array and each stringified JSON object within it
+        users = JSON.parse(event.data).map(JSON.parse)
+        return if !users or users.length is 0
+        console.dir users
+        map.render(users)
+
+      socket.onerror = (error) ->
+        console.error error
+
+      socket.onclose = (event) ->
+        console.log 'socket closed', event
+
+window.Geosocket = Geosocket
