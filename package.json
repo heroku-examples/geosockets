@@ -23,23 +23,19 @@
     "url": "https://github.com/heroku-examples/geosockets/issues"
   },
   "dependencies": {
-    "restify": "~2.6.0",
-    "logfmt": "~0.15.0",
-    "express": "~3.4.0",
     "coffee-script": "~1.6.3",
     "ws": "~0.4.31",
-    "domready": "~0.2.12",
-    "superagent": "~0.15.4",
+    "express": "~3.4.0",
     "redis": "~0.8.4",
     "hiredis": "~0.1.15",
-    "node-uuid": "~1.4.1",
     "cookie-cutter": "~0.1.0",
+    "domready": "~0.2.12",
+    "node-uuid": "~1.4.1",
     "geolocation-stream": "0.0.1",
     "mapbox.js": "~1.3.1"
   },
   "devDependencies": {
     "mocha": "~1.13.0",
-    "supertest": "~0.8.0",
     "grunt": "~0.4.1",
     "grunt-contrib-watch": "~0.5.3",
     "grunt-coffeeify": "~0.1.3"
