@@ -17,7 +17,7 @@
   GeoPublisher = (function() {
     GeoPublisher.prototype.position = null;
 
-    GeoPublisher.prototype.keepaliveInterval = 5 * 1000;
+    GeoPublisher.prototype.keepaliveInterval = 10 * 1000;
 
     function GeoPublisher(socket) {
       var _this = this;
@@ -154,41 +154,7 @@
 }).call(this);
 
 
-},{"cookie-cutter":2,"domready":3,"node-uuid":4,"mapbox.js":5,"geolocation-stream":6}],2:[function(require,module,exports){
-var exports = module.exports = function (doc) {
-    if (!doc) doc = {};
-    if (typeof doc === 'string') doc = { cookie: doc };
-    if (doc.cookie === undefined) doc.cookie = '';
-    
-    var self = {};
-    self.get = function (key) {
-        var splat = doc.cookie.split(/;\s*/);
-        for (var i = 0; i < splat.length; i++) {
-            var ps = splat[i].split('=');
-            var k = unescape(ps[0]);
-            if (k === key) return unescape(ps[1]);
-        }
-        return undefined;
-    };
-    
-    self.set = function (key, value, opts) {
-        if (!opts) opts = {};
-        var s = escape(key) + '=' + escape(value);
-        if (opts.expires) s += '; expires=' + opts.expires;
-        if (opts.path) s += '; path=' + escape(opts.path);
-        doc.cookie = s;
-        return s;
-    };
-    return self;
-};
-
-if (typeof document !== 'undefined') {
-    var cookie = exports(document);
-    exports.get = cookie.get;
-    exports.set = cookie.set;
-}
-
-},{}],3:[function(require,module,exports){
+},{"domready":2,"cookie-cutter":3,"geolocation-stream":4,"node-uuid":5,"mapbox.js":6}],2:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -244,7 +210,81 @@ if (typeof document !== 'undefined') {
       loaded ? fn() : fns.push(fn)
     })
 })
-},{}],7:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
+var stream = require('stream')
+var util = require('util')
+
+function GeolocationStream(options) {
+  var me = this
+  stream.Stream.call(me)
+  this.readable = true
+  this.startMonitoring(options)
+}
+
+util.inherits(GeolocationStream, stream.Stream)
+
+module.exports = function(options) {
+  return new GeolocationStream(options)
+}
+
+module.exports.GeolocationStream = GeolocationStream
+
+GeolocationStream.prototype.startMonitoring = function(options) {
+  this.watchID = navigator.geolocation.watchPosition(
+    this.onPosition.bind(this),
+    this.onError.bind(this),
+    options
+  )
+}
+
+GeolocationStream.prototype.stopMonitoring = function() {
+  navigator.geolocation.clearWatch(this.watchID)
+  this.emit('end')
+}
+
+GeolocationStream.prototype.onPosition = function(position) {
+  this.emit('data', position)
+}
+
+GeolocationStream.prototype.onError = function(position) {
+  this.emit('error', position)
+}
+
+},{"stream":7,"util":8}],3:[function(require,module,exports){
+var exports = module.exports = function (doc) {
+    if (!doc) doc = {};
+    if (typeof doc === 'string') doc = { cookie: doc };
+    if (doc.cookie === undefined) doc.cookie = '';
+    
+    var self = {};
+    self.get = function (key) {
+        var splat = doc.cookie.split(/;\s*/);
+        for (var i = 0; i < splat.length; i++) {
+            var ps = splat[i].split('=');
+            var k = unescape(ps[0]);
+            if (k === key) return unescape(ps[1]);
+        }
+        return undefined;
+    };
+    
+    self.set = function (key, value, opts) {
+        if (!opts) opts = {};
+        var s = escape(key) + '=' + escape(value);
+        if (opts.expires) s += '; expires=' + opts.expires;
+        if (opts.path) s += '; path=' + escape(opts.path);
+        doc.cookie = s;
+        return s;
+    };
+    return self;
+};
+
+if (typeof document !== 'undefined') {
+    var cookie = exports(document);
+    exports.get = cookie.get;
+    exports.set = cookie.set;
+}
+
+},{}],9:[function(require,module,exports){
 require=(function(e,t,n,r){function i(r){if(!n[r]){if(!t[r]){if(e)return e(r);throw new Error("Cannot find module '"+r+"'")}var s=n[r]={exports:{}};t[r][0](function(e){var n=t[r][1][e];return i(n?n:e)},s,s.exports)}return n[r].exports}for(var s=0;s<r.length;s++)i(r[s]);return i})(typeof require!=="undefined"&&require,{1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -4109,7 +4149,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 },{}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 (function(Buffer){//     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -4357,47 +4397,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 }).call(this);
 
 })(require("__browserify_buffer").Buffer)
-},{"crypto":8,"__browserify_buffer":7}],6:[function(require,module,exports){
-var stream = require('stream')
-var util = require('util')
-
-function GeolocationStream(options) {
-  var me = this
-  stream.Stream.call(me)
-  this.readable = true
-  this.startMonitoring(options)
-}
-
-util.inherits(GeolocationStream, stream.Stream)
-
-module.exports = function(options) {
-  return new GeolocationStream(options)
-}
-
-module.exports.GeolocationStream = GeolocationStream
-
-GeolocationStream.prototype.startMonitoring = function(options) {
-  this.watchID = navigator.geolocation.watchPosition(
-    this.onPosition.bind(this),
-    this.onError.bind(this),
-    options
-  )
-}
-
-GeolocationStream.prototype.stopMonitoring = function() {
-  navigator.geolocation.clearWatch(this.watchID)
-  this.emit('end')
-}
-
-GeolocationStream.prototype.onPosition = function(position) {
-  this.emit('data', position)
-}
-
-GeolocationStream.prototype.onError = function(position) {
-  this.emit('error', position)
-}
-
-},{"stream":9,"util":10}],9:[function(require,module,exports){
+},{"crypto":10,"__browserify_buffer":9}],7:[function(require,module,exports){
 var events = require('events');
 var util = require('util');
 
@@ -4518,7 +4518,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":11,"util":10}],10:[function(require,module,exports){
+},{"events":11,"util":8}],8:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -4871,7 +4871,7 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":11}],5:[function(require,module,exports){
+},{"events":11}],6:[function(require,module,exports){
 require('./leaflet');
 require('./mapbox');
 
@@ -5115,7 +5115,7 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":14}],8:[function(require,module,exports){
+},{"__browserify_process":14}],10:[function(require,module,exports){
 var sha = require('./sha')
 var rng = require('./rng')
 var md5 = require('./md5')
@@ -5191,45 +5191,7 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./sha":15,"./rng":16,"./md5":17}],16:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
-
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
-},{}],15:[function(require,module,exports){
+},{"./sha":15,"./md5":16,"./rng":17}],15:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5441,7 +5403,7 @@ function binb2b64(binarray)
 }
 
 
-},{}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
  * Digest Algorithm, as defined in RFC 1321.
@@ -5827,6 +5789,44 @@ exports.hex_md5 = hex_md5;
 exports.b64_md5 = b64_md5;
 exports.any_md5 = any_md5;
 
+},{}],17:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
 },{}],12:[function(require,module,exports){
 window.L = require('leaflet/dist/leaflet-src');
 
@@ -14786,7 +14786,7 @@ L.mapbox = module.exports = {
     template: require('mustache').to_html
 };
 
-},{"./package.json":19,"./src/geocoder":21,"./src/marker":22,"./src/tile_layer":23,"./src/share_control":24,"./src/legend_control":25,"./src/geocoder_control":26,"./src/grid_control":27,"./src/grid_layer":28,"./src/marker_layer":29,"./src/map":30,"./src/config":20,"./src/sanitize":31,"mustache":32}],31:[function(require,module,exports){
+},{"./package.json":19,"./src/geocoder":21,"./src/marker":22,"./src/tile_layer":23,"./src/share_control":24,"./src/geocoder_control":25,"./src/legend_control":26,"./src/grid_control":27,"./src/grid_layer":28,"./src/marker_layer":29,"./src/map":30,"./src/config":20,"./src/sanitize":31,"mustache":32}],31:[function(require,module,exports){
 'use strict';
 
 var html_sanitize = require('../ext/sanitizer/html-sanitizer-bundle.js');
@@ -14808,7 +14808,162 @@ module.exports = function(_) {
     return html_sanitize(_, cleanUrl, cleanId);
 };
 
-},{"../ext/sanitizer/html-sanitizer-bundle.js":33}],32:[function(require,module,exports){
+},{"../ext/sanitizer/html-sanitizer-bundle.js":33}],21:[function(require,module,exports){
+'use strict';
+
+var util = require('./util'),
+    urlhelper = require('./url'),
+    request = require('./request');
+
+// Low-level geocoding interface - wraps specific API calls and their
+// return values.
+module.exports = function(_) {
+    var geocoder = {}, url;
+
+    geocoder.getURL = function(_) {
+        return url;
+    };
+
+    geocoder.setURL = function(_) {
+        url = urlhelper.jsonify(_);
+        return geocoder;
+    };
+
+    geocoder.setID = function(_) {
+        util.strict(_, 'string');
+        geocoder.setURL(urlhelper.base() + _ + '/geocode/{query}.json');
+        return geocoder;
+    };
+
+    geocoder.setTileJSON = function(_) {
+        util.strict(_, 'object');
+        geocoder.setURL(_.geocoder);
+        return geocoder;
+    };
+
+    geocoder.queryURL = function(_) {
+        util.strict(_, 'string');
+        if (!geocoder.getURL()) throw new Error('Geocoding map ID not set');
+        return L.Util.template(geocoder.getURL(), { query: encodeURIComponent(_) });
+    };
+
+    geocoder.query = function(_, callback) {
+        util.strict(_, 'string');
+        util.strict(callback, 'function');
+        request(geocoder.queryURL(_), function(err, json) {
+            if (json && json.results && json.results.length) {
+                var res = {
+                    results: json.results,
+                    latlng: [json.results[0][0].lat, json.results[0][0].lon]
+                };
+                if (json.results[0][0].bounds !== undefined) {
+                    res.bounds = json.results[0][0].bounds;
+                    res.lbounds = util.lbounds(res.bounds);
+                }
+                callback(null, res);
+            } else callback(err || true);
+        });
+
+        return geocoder;
+    };
+
+    // a reverse geocode:
+    //
+    //  geocoder.reverseQuery([80, 20])
+    geocoder.reverseQuery = function(_, callback) {
+        var q = '';
+
+        function norm(x) {
+            if (x.lat !== undefined && x.lng !== undefined) return x.lng + ',' + x.lat;
+            else if (x.lat !== undefined && x.lon !== undefined) return x.lon + ',' + x.lat;
+            else return x[0] + ',' + x[1];
+        }
+
+        if (_.length && _[0].length) {
+            for (var i = 0, pts = []; i < _.length; i++) pts.push(norm(_[i]));
+            q = pts.join(';');
+        } else q = norm(_);
+
+        request(geocoder.queryURL(q), function(err, json) {
+            callback(err, json);
+        });
+
+        return geocoder;
+    };
+
+    if (typeof _ === 'string') {
+        if (_.indexOf('/') == -1) geocoder.setID(_);
+        else geocoder.setURL(_);
+    }
+    else if (typeof _ === 'object') geocoder.setTileJSON(_);
+
+    return geocoder;
+};
+
+},{"./util":34,"./url":35,"./request":36}],22:[function(require,module,exports){
+'use strict';
+
+var url = require('./url'),
+    sanitize = require('./sanitize');
+
+// mapbox-related markers functionality
+// provide an icon from mapbox's simple-style spec and hosted markers
+// service
+function icon(fp) {
+    fp = fp || {};
+
+    var sizes = {
+            small: [20, 50],
+            medium: [30, 70],
+            large: [35, 90]
+        },
+        size = fp['marker-size'] || 'medium',
+        symbol = (fp['marker-symbol']) ? '-' + fp['marker-symbol'] : '',
+        color = (fp['marker-color'] || '7e7e7e').replace('#', '');
+
+    return L.icon({
+        iconUrl: url.base() + 'marker/' +
+            'pin-' + size.charAt(0) + symbol + '+' + color +
+            // detect and use retina markers, which are x2 resolution
+            ((L.Browser.retina) ? '@2x' : '') + '.png',
+        iconSize: sizes[size],
+        iconAnchor: [sizes[size][0] / 2, sizes[size][1] / 2],
+        popupAnchor: [0, -sizes[size][1] / 2]
+    });
+}
+
+// a factory that provides markers for Leaflet from MapBox's
+// [simple-style specification](https://github.com/mapbox/simplestyle-spec)
+// and [Markers API](http://mapbox.com/developers/api/#markers).
+function style(f, latlon) {
+    return L.marker(latlon, {
+        icon: icon(f.properties),
+        title: f.properties.title
+    });
+}
+
+function createPopup(f, sanitizer) {
+    if (!f || !f.properties) return '';
+    var popup = '';
+
+    if (f.properties.title) {
+        popup += '<div class="marker-title">' + f.properties.title + '</div>';
+    }
+
+    if (f.properties.description) {
+        popup += '<div class="marker-description">' + f.properties.description + '</div>';
+    }
+
+    return (sanitizer || sanitize)(popup);
+}
+
+module.exports = {
+    icon: icon,
+    style: style,
+    createPopup: createPopup
+};
+
+},{"./url":35,"./sanitize":31}],32:[function(require,module,exports){
 (function(){/*!
  * mustache.js - Logic-less {{mustache}} templates with JavaScript
  * http://github.com/janl/mustache.js
@@ -15421,162 +15576,7 @@ module.exports = function(_) {
 }())));
 
 })()
-},{}],21:[function(require,module,exports){
-'use strict';
-
-var util = require('./util'),
-    urlhelper = require('./url'),
-    request = require('./request');
-
-// Low-level geocoding interface - wraps specific API calls and their
-// return values.
-module.exports = function(_) {
-    var geocoder = {}, url;
-
-    geocoder.getURL = function(_) {
-        return url;
-    };
-
-    geocoder.setURL = function(_) {
-        url = urlhelper.jsonify(_);
-        return geocoder;
-    };
-
-    geocoder.setID = function(_) {
-        util.strict(_, 'string');
-        geocoder.setURL(urlhelper.base() + _ + '/geocode/{query}.json');
-        return geocoder;
-    };
-
-    geocoder.setTileJSON = function(_) {
-        util.strict(_, 'object');
-        geocoder.setURL(_.geocoder);
-        return geocoder;
-    };
-
-    geocoder.queryURL = function(_) {
-        util.strict(_, 'string');
-        if (!geocoder.getURL()) throw new Error('Geocoding map ID not set');
-        return L.Util.template(geocoder.getURL(), { query: encodeURIComponent(_) });
-    };
-
-    geocoder.query = function(_, callback) {
-        util.strict(_, 'string');
-        util.strict(callback, 'function');
-        request(geocoder.queryURL(_), function(err, json) {
-            if (json && json.results && json.results.length) {
-                var res = {
-                    results: json.results,
-                    latlng: [json.results[0][0].lat, json.results[0][0].lon]
-                };
-                if (json.results[0][0].bounds !== undefined) {
-                    res.bounds = json.results[0][0].bounds;
-                    res.lbounds = util.lbounds(res.bounds);
-                }
-                callback(null, res);
-            } else callback(err || true);
-        });
-
-        return geocoder;
-    };
-
-    // a reverse geocode:
-    //
-    //  geocoder.reverseQuery([80, 20])
-    geocoder.reverseQuery = function(_, callback) {
-        var q = '';
-
-        function norm(x) {
-            if (x.lat !== undefined && x.lng !== undefined) return x.lng + ',' + x.lat;
-            else if (x.lat !== undefined && x.lon !== undefined) return x.lon + ',' + x.lat;
-            else return x[0] + ',' + x[1];
-        }
-
-        if (_.length && _[0].length) {
-            for (var i = 0, pts = []; i < _.length; i++) pts.push(norm(_[i]));
-            q = pts.join(';');
-        } else q = norm(_);
-
-        request(geocoder.queryURL(q), function(err, json) {
-            callback(err, json);
-        });
-
-        return geocoder;
-    };
-
-    if (typeof _ === 'string') {
-        if (_.indexOf('/') == -1) geocoder.setID(_);
-        else geocoder.setURL(_);
-    }
-    else if (typeof _ === 'object') geocoder.setTileJSON(_);
-
-    return geocoder;
-};
-
-},{"./util":34,"./url":35,"./request":36}],22:[function(require,module,exports){
-'use strict';
-
-var url = require('./url'),
-    sanitize = require('./sanitize');
-
-// mapbox-related markers functionality
-// provide an icon from mapbox's simple-style spec and hosted markers
-// service
-function icon(fp) {
-    fp = fp || {};
-
-    var sizes = {
-            small: [20, 50],
-            medium: [30, 70],
-            large: [35, 90]
-        },
-        size = fp['marker-size'] || 'medium',
-        symbol = (fp['marker-symbol']) ? '-' + fp['marker-symbol'] : '',
-        color = (fp['marker-color'] || '7e7e7e').replace('#', '');
-
-    return L.icon({
-        iconUrl: url.base() + 'marker/' +
-            'pin-' + size.charAt(0) + symbol + '+' + color +
-            // detect and use retina markers, which are x2 resolution
-            ((L.Browser.retina) ? '@2x' : '') + '.png',
-        iconSize: sizes[size],
-        iconAnchor: [sizes[size][0] / 2, sizes[size][1] / 2],
-        popupAnchor: [0, -sizes[size][1] / 2]
-    });
-}
-
-// a factory that provides markers for Leaflet from MapBox's
-// [simple-style specification](https://github.com/mapbox/simplestyle-spec)
-// and [Markers API](http://mapbox.com/developers/api/#markers).
-function style(f, latlon) {
-    return L.marker(latlon, {
-        icon: icon(f.properties),
-        title: f.properties.title
-    });
-}
-
-function createPopup(f, sanitizer) {
-    if (!f || !f.properties) return '';
-    var popup = '';
-
-    if (f.properties.title) {
-        popup += '<div class="marker-title">' + f.properties.title + '</div>';
-    }
-
-    if (f.properties.description) {
-        popup += '<div class="marker-description">' + f.properties.description + '</div>';
-    }
-
-    return (sanitizer || sanitize)(popup);
-}
-
-module.exports = {
-    icon: icon,
-    style: style,
-    createPopup: createPopup
-};
-
-},{"./url":35,"./sanitize":31}],23:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -15772,74 +15772,6 @@ module.exports = function(_, options) {
 },{"./load_tilejson":37}],25:[function(require,module,exports){
 'use strict';
 
-var LegendControl = L.Control.extend({
-
-    options: {
-        position: 'bottomright',
-        sanitizer: require('./sanitize')
-    },
-
-    initialize: function(options) {
-        L.setOptions(this, options);
-        this._legends = {};
-    },
-
-    onAdd: function(map) {
-        this._container = L.DomUtil.create('div', 'map-legends wax-legends');
-        L.DomEvent.disableClickPropagation(this._container);
-
-        this._update();
-
-        return this._container;
-    },
-
-    addLegend: function(text) {
-        if (!text) { return this; }
-
-        if (!this._legends[text]) {
-            this._legends[text] = 0;
-        }
-
-        this._legends[text]++;
-        return this._update();
-    },
-
-    removeLegend: function(text) {
-        if (!text) { return this; }
-        if (this._legends[text]) this._legends[text]--;
-        return this._update();
-    },
-
-    _update: function() {
-        if (!this._map) { return this; }
-
-        this._container.innerHTML = '';
-        var hide = 'none';
-
-        for (var i in this._legends) {
-            if (this._legends.hasOwnProperty(i) && this._legends[i]) {
-                var div = this._container.appendChild(document.createElement('div'));
-                div.className = 'map-legend wax-legend';
-                div.innerHTML = this.options.sanitizer(i);
-                hide = 'block';
-            }
-        }
-
-        // hide the control entirely unless there is at least one legend;
-        // otherwise there will be a small grey blemish on the map.
-        this._container.style.display = hide;
-
-        return this;
-    }
-});
-
-module.exports = function(options) {
-    return new LegendControl(options);
-};
-
-},{"./sanitize":31}],26:[function(require,module,exports){
-'use strict';
-
 var geocoder = require('./geocoder');
 
 var GeocoderControl = L.Control.extend({
@@ -15970,7 +15902,75 @@ module.exports = function(options) {
     return new GeocoderControl(options);
 };
 
-},{"./geocoder":21}],28:[function(require,module,exports){
+},{"./geocoder":21}],26:[function(require,module,exports){
+'use strict';
+
+var LegendControl = L.Control.extend({
+
+    options: {
+        position: 'bottomright',
+        sanitizer: require('./sanitize')
+    },
+
+    initialize: function(options) {
+        L.setOptions(this, options);
+        this._legends = {};
+    },
+
+    onAdd: function(map) {
+        this._container = L.DomUtil.create('div', 'map-legends wax-legends');
+        L.DomEvent.disableClickPropagation(this._container);
+
+        this._update();
+
+        return this._container;
+    },
+
+    addLegend: function(text) {
+        if (!text) { return this; }
+
+        if (!this._legends[text]) {
+            this._legends[text] = 0;
+        }
+
+        this._legends[text]++;
+        return this._update();
+    },
+
+    removeLegend: function(text) {
+        if (!text) { return this; }
+        if (this._legends[text]) this._legends[text]--;
+        return this._update();
+    },
+
+    _update: function() {
+        if (!this._map) { return this; }
+
+        this._container.innerHTML = '';
+        var hide = 'none';
+
+        for (var i in this._legends) {
+            if (this._legends.hasOwnProperty(i) && this._legends[i]) {
+                var div = this._container.appendChild(document.createElement('div'));
+                div.className = 'map-legend wax-legend';
+                div.innerHTML = this.options.sanitizer(i);
+                hide = 'block';
+            }
+        }
+
+        // hide the control entirely unless there is at least one legend;
+        // otherwise there will be a small grey blemish on the map.
+        this._container.style.display = hide;
+
+        return this;
+    }
+});
+
+module.exports = function(options) {
+    return new LegendControl(options);
+};
+
+},{"./sanitize":31}],28:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16198,7 +16198,7 @@ module.exports = function(_, options) {
     return new GridLayer(_, options);
 };
 
-},{"./util":34,"./request":36,"./url":35,"./grid":38,"./load_tilejson":37}],29:[function(require,module,exports){
+},{"./util":34,"./url":35,"./request":36,"./grid":38,"./load_tilejson":37}],29:[function(require,module,exports){
 'use strict';
 
 var util = require('./util');
@@ -16303,7 +16303,7 @@ module.exports = function(_, options) {
     return new MarkerLayer(_, options);
 };
 
-},{"./util":34,"./url":35,"./request":36,"./marker":22,"./sanitize":31}],30:[function(require,module,exports){
+},{"./url":35,"./util":34,"./request":36,"./marker":22,"./sanitize":31}],30:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16425,7 +16425,42 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":34,"./tile_layer":23,"./marker_layer":29,"./grid_layer":28,"./grid_control":27,"./legend_control":25,"./load_tilejson":37}],33:[function(require,module,exports){
+},{"./util":34,"./marker_layer":29,"./tile_layer":23,"./grid_layer":28,"./grid_control":27,"./legend_control":26,"./load_tilejson":37}],34:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+    idUrl: function(_, t) {
+        if (_.indexOf('/') == -1) t.loadID(_);
+        else t.loadURL(_);
+    },
+    log: function(_) {
+        if (console && typeof console.error === 'function') {
+            console.error(_);
+        }
+    },
+    strict: function(_, type) {
+        if (typeof _ !== type) {
+            throw new Error('Invalid argument: ' + type + ' expected');
+        }
+    },
+    strict_instance: function(_, klass, name) {
+        if (!(_ instanceof klass)) {
+            throw new Error('Invalid argument: ' + name + ' expected');
+        }
+    },
+    strict_oneof: function(_, values) {
+        if (values.indexOf(_) == -1) {
+            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
+                values.join(', '));
+        }
+    },
+    lbounds: function(_) {
+        // leaflet-compatible bounds, since leaflet does not do geojson
+        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
+    }
+};
+
+},{}],33:[function(require,module,exports){
 (function(){// Copyright (C) 2010 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18873,41 +18908,6 @@ if (typeof module !== 'undefined') {
 }
 
 })()
-},{}],34:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-    idUrl: function(_, t) {
-        if (_.indexOf('/') == -1) t.loadID(_);
-        else t.loadURL(_);
-    },
-    log: function(_) {
-        if (console && typeof console.error === 'function') {
-            console.error(_);
-        }
-    },
-    strict: function(_, type) {
-        if (typeof _ !== type) {
-            throw new Error('Invalid argument: ' + type + ' expected');
-        }
-    },
-    strict_instance: function(_, klass, name) {
-        if (!(_ instanceof klass)) {
-            throw new Error('Invalid argument: ' + name + ' expected');
-        }
-    },
-    strict_oneof: function(_, values) {
-        if (values.indexOf(_) == -1) {
-            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
-                values.join(', '));
-        }
-    },
-    lbounds: function(_) {
-        // leaflet-compatible bounds, since leaflet does not do geojson
-        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
-    }
-};
-
 },{}],38:[function(require,module,exports){
 'use strict';
 

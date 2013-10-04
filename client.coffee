@@ -6,7 +6,7 @@ require 'mapbox.js' # auto-attaches to window.L
 
 class GeoPublisher
   position: null
-  keepaliveInterval: 5*1000
+  keepaliveInterval: 10*1000
 
   constructor: (@socket) ->
     # Heroku closes the WebSocket connection after 55 seconds of
