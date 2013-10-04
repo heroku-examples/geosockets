@@ -33,10 +33,19 @@ class GeoPublisher
 
 class Map
 
+  users: []
+  markers: []
+  defaultLatLng: [40, -74.50]
+  defaultZoom: 4
+  markerOptions:
+    clickable: false
+    icon: L.icon
+      iconUrl: "https://geosockets.herokuapp.com/marker.svg"
+      iconSize: [10, 10]
+      iconAnchor: [5, 5]
+      popupAnchor: [0, -10]
+
   constructor: ->
-    @users = []
-    @defaultLatLng = [40, -74.50]
-    @defaultZoom = 4
 
     # Inject Mapbox CSS into the DOM
     link = document.createElement("link")
@@ -50,35 +59,19 @@ class Map
       .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
       .setView(@defaultLatLng, @defaultZoom)
 
+    @map.markers = L.mapbox.markerLayer().addTo(@map)
+
   render: (users) =>
 
-    # Convert user location data into GeoJSON
-    users = users.map (user) ->
-      type: "Feature"
-      geometry:
-        type: "Point"
-        coordinates: [user.coords.longitude, user.coords.latitude]
-      properties:
-        title: "Someone"
-        icon:
-          iconUrl: "https://geosockets.herokuapp.com/marker.svg"
-          iconSize: [10, 10]
-          iconAnchor: [5, 5]
-          popupAnchor: [0, -10]
-
-    # Set a custom icon on each marker
-    @map.markerLayer.on "layeradd", (e) ->
-      marker = e.layer
-      feature = marker.feature
-      marker.setIcon L.icon(feature.properties.icon)
-
-    # Render the latest markers
-    @map.markerLayer.setGeoJSON(users)
+    for user in users
+      coordinates = [user.coords.latitude, user.coords.longitude]
+      L.marker(coordinates, @markerOptions)
+        .addTo(@map.markers)
 
     # Pan to the user's location when the map is first rendered.
     @map.panTo(geoPublisher.getLatLng()) if @users.length is 0
 
-    # Save the marker data for diffing the next time a broadcast is received.
+    # Save user data for diffing the next time a broadcast is received.
     @users = users
 
 domready ->
