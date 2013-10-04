@@ -104,7 +104,7 @@ domready ->
   if location.host.match(/localhost/)
     host = location.origin.replace(/^http/, 'ws')
   else
-    host = "ws://geosockets.herokuapp.com"
+    host = "wss://geosockets.herokuapp.com"
   window.socket = new WebSocket(host)
 
   # Start listening for browser geolocation events
