@@ -32,7 +32,6 @@ class GeoPublisher
     @position.latitude and @socket.readyState is 1
 
   getLatLng: =>
-    console.log "getLatLng", [@position.latitude, @position.longitude]
     [@position.latitude, @position.longitude]
 
   publish: =>
