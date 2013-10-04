@@ -34,10 +34,11 @@ class GeoPublisher
 
 class Map
 
-  @defaultLatLng: [40, -74.50]
-  @defaultZoom: 4
-
   constructor: ->
+
+    @markers = []
+    @defaultLatLng = [40, -74.50]
+    @defaultZoom = 4
 
     # Inject Mapbox CSS into the DOM
     #
@@ -48,12 +49,11 @@ class Map
     document.body.appendChild link
 
     # Create the Mapbox map
-    #
-    @map = L.mapbox.map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
-      .setView([40, -74.50], 4)
+    @map = L.mapbox
+      .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
+      .setView(@defaultLatLng, @defaultZoom)
 
   # Massage geodata array into a GeoJSON-friendly format
-  #
   toGeoJSON: (data) ->
     data.map (datum) ->
       type: "Feature"
@@ -81,8 +81,13 @@ class Map
 
     @map.markerLayer.setGeoJSON(@toGeoJSON(data))
 
-    # Pan the map to center this new marker
-    # @map.panTo geodata.geometry.coordinates.reverse()
+    # Pan to the user's location when the map is first rendered.
+    if @markers.length is 0
+      @map.panTo [geoPublisher.position.coords.latitude,
+        geoPublisher.position.coords.longitude]
+
+    # Save the marker data for diffing the next time a broadcast is received.
+    @markers = data
 
 domready ->
 
@@ -90,9 +95,7 @@ domready ->
     alert "Your browser doesn't support WebSockets."
     return
 
-  # Create a cookie that the server can use to uniquely
-  # identify this client.
-  #
+  # Create a cookie that the server can use to uniquely identify this client.
   unless cookie.get 'geosockets-uuid'
     cookie.set 'geosockets-uuid', uuid.v4()
 
@@ -120,9 +123,7 @@ domready ->
     # Parse the JSON message and each stringified JSON object within it
     data = JSON.parse(event.data)
       .map (datum) -> JSON.parse(datum)
-
     return if !data or data.length is 0
-
     console.dir data
     map.render(data)
 
