@@ -6,7 +6,7 @@ require 'mapbox.js' # auto-attaches to window.L
 
 class GeoPublisher
   position: null
-  keepaliveInterval: 20*1000
+  keepaliveInterval: 5*1000
 
   constructor: (@socket) ->
     # Heroku closes the WebSocket connection after 55 seconds of
@@ -23,12 +23,14 @@ class GeoPublisher
     @stream.on "error", (err) ->
       console.error err
 
-  getLatLng: ->
+  isReady: =>
+    @position and @socket.readyState is 1
+
+  getLatLng: =>
     [@position.coords.latitude, @position.coords.longitude]
 
   publish: ->
-    if @socket.readyState is 1
-      @socket.send JSON.stringify(@position)
+    @socket.send JSON.stringify(@position) if @isReady
 
 class Map
   users: []
@@ -38,7 +40,7 @@ class Map
   markerOptions:
     clickable: false
     keyboard: false
-    opacity: 0.3
+    opacity: 1
     icon: L.icon
       iconUrl: "https://geosockets.herokuapp.com/marker.svg"
       iconSize: [10, 10]
@@ -67,7 +69,7 @@ class Map
     renderedUUIDs = @users.map (user) -> user.uuid
 
     # Pan to the user's location when the map is first rendered.
-    if renderedUUIDs.length is 0
+    if renderedUUIDs.length is 0 and geoPublisher.isReady
       @map.panTo(geoPublisher.getLatLng())
 
     for user in users
@@ -93,25 +95,24 @@ domready ->
     cookie.set 'geosockets-uuid', uuid.v4()
 
   # Determine the URL of the current page
-  # Look first for a canonical URL, then default to window.location.href
+  # Look for a canonical URL, then default to window.location.href
   window.url = (document.querySelector('link[rel=canonical]') or window.location).href
 
   # Create the map
   window.map = new Map()
 
   # Open the socket connection
-  # http://localhost:5000 -> ws://localhost:5000
   if location.host.match(/localhost/)
+    # http://localhost:5000 -> ws://localhost:5000
     host = location.origin.replace(/^http/, 'ws')
   else
+    # Use wss:// on Heroku
     host = "wss://geosockets.herokuapp.com"
   window.socket = new WebSocket(host)
 
-  # Start listening for browser geolocation events
-  window.geoPublisher = new GeoPublisher(socket)
-
   socket.onopen = (event) ->
-    geoPublisher.publish()
+    # Start listening for browser geolocation events
+    window.geoPublisher = new GeoPublisher(socket)
 
   socket.onmessage = (event) ->
     # Parse the JSON message array and each stringified JSON object within it
