@@ -72,8 +72,6 @@ Use CSS to configure the size and position of the map:
 
 ### Testing
 
-Geosockets is tested with [mocha](http://visionmedia.github.io/mocha/) and [supertest](https://github.com/visionmedia/supertest#readme). Supertest pairs nicely with Express, allowing the entire express app to be mounted for simple and clean webservice integration tests.
-
 ```
 npm test
 ```
