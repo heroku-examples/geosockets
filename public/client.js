@@ -15,21 +15,20 @@
   require('mapbox.js');
 
   GeoPublisher = (function() {
-    GeoPublisher.prototype.position = null;
+    GeoPublisher.prototype.position = {};
 
     GeoPublisher.prototype.keepaliveInterval = 10 * 1000;
 
     function GeoPublisher(socket) {
       var _this = this;
       this.socket = socket;
+      this.publish = __bind(this.publish, this);
       this.getLatLng = __bind(this.getLatLng, this);
       this.isReady = __bind(this.isReady, this);
-      setInterval((function() {
-        return _this.publish();
-      }), this.keepaliveInterval);
       this.stream = new GeolocationStream();
       this.stream.on("data", function(position) {
-        _this.position = position;
+        _this.position.latitude = position.coords.latitude;
+        _this.position.longitude = position.coords.longitude;
         _this.position.uuid = cookie.get('geosockets-uuid');
         _this.position.url = window.url;
         return _this.publish();
@@ -37,14 +36,17 @@
       this.stream.on("error", function(err) {
         return console.error(err);
       });
+      setInterval((function() {
+        return _this.publish();
+      }), this.keepaliveInterval);
     }
 
     GeoPublisher.prototype.isReady = function() {
-      return this.position && this.socket.readyState === 1;
+      return this.position.latitude && this.socket.readyState === 1;
     };
 
     GeoPublisher.prototype.getLatLng = function() {
-      return [this.position.coords.latitude, this.position.coords.longitude];
+      return [this.position.latitude, this.position.longitude];
     };
 
     GeoPublisher.prototype.publish = function() {
@@ -92,7 +94,7 @@
     }
 
     Map.prototype.render = function(users) {
-      var coordinates, renderedUUIDs, user, _i, _len, _ref, _results;
+      var renderedUUIDs, user, _i, _len, _ref, _results;
       renderedUUIDs = this.users.map(function(user) {
         return user.uuid;
       });
@@ -105,8 +107,7 @@
         if (_ref = user.uuid, __indexOf.call(renderedUUIDs, _ref) >= 0) {
           continue;
         }
-        coordinates = [user.coords.latitude, user.coords.longitude];
-        L.marker(coordinates, this.markerOptions).addTo(this.map.markers);
+        L.marker([user.latitude, user.longitude], this.markerOptions).addTo(this.map.markers);
         _results.push(this.users.push(user));
       }
       return _results;
@@ -164,7 +165,7 @@
 }).call(this);
 
 
-},{"cookie-cutter":2,"domready":3,"geolocation-stream":4,"node-uuid":5,"mapbox.js":6}],2:[function(require,module,exports){
+},{"cookie-cutter":2,"domready":3,"geolocation-stream":4,"mapbox.js":5,"node-uuid":6}],2:[function(require,module,exports){
 var exports = module.exports = function (doc) {
     if (!doc) doc = {};
     if (typeof doc === 'string') doc = { cookie: doc };
@@ -4159,7 +4160,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 },{}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 (function(Buffer){//     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -4881,7 +4882,7 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":11}],6:[function(require,module,exports){
+},{"events":11}],5:[function(require,module,exports){
 require('./leaflet');
 require('./mapbox');
 
@@ -5201,7 +5202,45 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./sha":15,"./rng":16,"./md5":17}],15:[function(require,module,exports){
+},{"./rng":15,"./sha":16,"./md5":17}],15:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
+},{}],16:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5413,45 +5452,10 @@ function binb2b64(binarray)
 }
 
 
-},{}],16:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
+},{}],12:[function(require,module,exports){
+window.L = require('leaflet/dist/leaflet-src');
 
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
-},{}],17:[function(require,module,exports){
+},{"leaflet/dist/leaflet-src":18}],17:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
  * Digest Algorithm, as defined in RFC 1321.
@@ -5837,10 +5841,7 @@ exports.hex_md5 = hex_md5;
 exports.b64_md5 = b64_md5;
 exports.any_md5 = any_md5;
 
-},{}],12:[function(require,module,exports){
-window.L = require('leaflet/dist/leaflet-src');
-
-},{"leaflet/dist/leaflet-src":18}],19:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 module.exports={
   "author": {
     "name": "MapBox"
@@ -16435,42 +16436,7 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":34,"./tile_layer":23,"./marker_layer":29,"./grid_layer":28,"./grid_control":27,"./legend_control":25,"./load_tilejson":37}],34:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-    idUrl: function(_, t) {
-        if (_.indexOf('/') == -1) t.loadID(_);
-        else t.loadURL(_);
-    },
-    log: function(_) {
-        if (console && typeof console.error === 'function') {
-            console.error(_);
-        }
-    },
-    strict: function(_, type) {
-        if (typeof _ !== type) {
-            throw new Error('Invalid argument: ' + type + ' expected');
-        }
-    },
-    strict_instance: function(_, klass, name) {
-        if (!(_ instanceof klass)) {
-            throw new Error('Invalid argument: ' + name + ' expected');
-        }
-    },
-    strict_oneof: function(_, values) {
-        if (values.indexOf(_) == -1) {
-            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
-                values.join(', '));
-        }
-    },
-    lbounds: function(_) {
-        // leaflet-compatible bounds, since leaflet does not do geojson
-        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
-    }
-};
-
-},{}],33:[function(require,module,exports){
+},{"./util":34,"./tile_layer":23,"./marker_layer":29,"./grid_layer":28,"./grid_control":27,"./legend_control":25,"./load_tilejson":37}],33:[function(require,module,exports){
 (function(){// Copyright (C) 2010 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18918,6 +18884,41 @@ if (typeof module !== 'undefined') {
 }
 
 })()
+},{}],34:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+    idUrl: function(_, t) {
+        if (_.indexOf('/') == -1) t.loadID(_);
+        else t.loadURL(_);
+    },
+    log: function(_) {
+        if (console && typeof console.error === 'function') {
+            console.error(_);
+        }
+    },
+    strict: function(_, type) {
+        if (typeof _ !== type) {
+            throw new Error('Invalid argument: ' + type + ' expected');
+        }
+    },
+    strict_instance: function(_, klass, name) {
+        if (!(_ instanceof klass)) {
+            throw new Error('Invalid argument: ' + name + ' expected');
+        }
+    },
+    strict_oneof: function(_, values) {
+        if (values.indexOf(_) == -1) {
+            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
+                values.join(', '));
+        }
+    },
+    lbounds: function(_) {
+        // leaflet-compatible bounds, since leaflet does not do geojson
+        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
+    }
+};
+
 },{}],38:[function(require,module,exports){
 'use strict';
 

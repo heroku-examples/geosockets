@@ -5,17 +5,18 @@ uuid = require 'node-uuid'
 require 'mapbox.js' # auto-attaches to window.L
 
 class GeoPublisher
-  position: null
+  position: {}
   keepaliveInterval: 10*1000
 
   constructor: (@socket) ->
-    # Heroku closes the WebSocket connection after 55 seconds of
-    # inactivity; keep it alive by republishing periodically
-    setInterval (=>@publish()), @keepaliveInterval
-
     @stream = new GeolocationStream()
+
     @stream.on "data", (position) =>
-      @position = position
+
+      # Firefox doesn't know how to JSON.stringify the coords
+      # object, so just pull out the lat/lng pair
+      @position.latitude = position.coords.latitude
+      @position.longitude = position.coords.longitude
       @position.uuid = cookie.get 'geosockets-uuid'
       @position.url = window.url
       @publish()
@@ -23,13 +24,17 @@ class GeoPublisher
     @stream.on "error", (err) ->
       console.error err
 
+    # Heroku closes the WebSocket connection after 55 seconds of
+    # inactivity; keep it alive by republishing periodically
+    setInterval (=>@publish()), @keepaliveInterval
+
   isReady: =>
-    @position and @socket.readyState is 1
+    @position.latitude and @socket.readyState is 1
 
   getLatLng: =>
-    [@position.coords.latitude, @position.coords.longitude]
+    [@position.latitude, @position.longitude]
 
-  publish: ->
+  publish: =>
     @socket.send JSON.stringify(@position) if @isReady
 
 class Map
@@ -80,8 +85,7 @@ class Map
       continue if user.uuid in renderedUUIDs
 
       # Add marker to map
-      coordinates = [user.coords.latitude, user.coords.longitude]
-      L.marker(coordinates, @markerOptions)
+      L.marker([user.latitude, user.longitude], @markerOptions)
         .addTo(@map.markers)
 
       # Add this user to list of already rendered users

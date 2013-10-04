@@ -22,18 +22,14 @@ module.exports = ->
   # Websockets Server
   @socketServer = new ws(server: @server)
   @socketServer.on "connection", (socket) =>
-
     socket.on 'message', (data, flags) =>
-      data = JSON.parse(data)
-      return unless data and data.coords
-
-      @UserStore.add data, (err, users) ->
+      user = JSON.parse(data)
+      @UserStore.add user, (err, users) ->
         return console.error(err) if err
-        @UserStore.getByUrl data.url, (err, users) ->
+        @UserStore.getByUrl user.url, (err, users) ->
           return console.error(err) if err
           for client in @socketServer.clients
             client.send JSON.stringify(users)
-
 
   # Return app for testability
   @app
