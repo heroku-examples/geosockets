@@ -88,9 +88,9 @@ class Map
       continue if user.uuid in renderedUUIDs
 
       # Add marker to map
-      console.log "render user", user.latitude, user.longitude
-      L.marker([user.latitude, user.longitude], @markerOptions)
-        .addTo(@map.markers)
+      if user.latitude and user.longitude
+        L.marker([user.latitude, user.longitude], @markerOptions)
+          .addTo(@map.markers)
 
       # Add this user to list of already rendered users
       @users.push(user)
