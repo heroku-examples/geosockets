@@ -42,7 +42,7 @@ class Map
     keyboard: false
     opacity: 1
     icon: L.icon
-      iconUrl: "https://geosockets.herokuapp.com/marker.svg"
+      iconUrl: "https://geosockets.heroku.com/marker.svg"
       iconSize: [10, 10]
       iconAnchor: [5, 5]
 
@@ -107,7 +107,7 @@ domready ->
     host = location.origin.replace(/^http/, 'ws')
   else
     # Use wss:// on Heroku
-    host = "wss://geosockets.herokuapp.com"
+    host = "wss://geosockets.heroku.com"
   window.socket = new WebSocket(host)
 
   socket.onopen = (event) ->
