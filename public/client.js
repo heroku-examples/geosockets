@@ -14,10 +14,16 @@
 
   require('mapbox.js');
 
+  window.log = function() {
+    if (window.console && location.search.match(/debug/)) {
+      return console.log.apply(console, arguments);
+    }
+  };
+
   GeoPublisher = (function() {
     GeoPublisher.prototype.position = {};
 
-    GeoPublisher.prototype.keepaliveInterval = 10 * 1000;
+    GeoPublisher.prototype.keepaliveInterval = 40 * 1000;
 
     function GeoPublisher(socket) {
       var _this = this;
@@ -34,7 +40,7 @@
         return _this.publish();
       });
       this.stream.on("error", function(err) {
-        return console.error(err);
+        return log(err);
       });
       setInterval((function() {
         return _this.publish();
@@ -147,14 +153,14 @@
           if (!users || users.length === 0) {
             return;
           }
-          console.dir(users);
+          log("users", users);
           return map.render(users);
         };
         socket.onerror = function(error) {
-          return console.error(error);
+          return log(error);
         };
         return socket.onclose = function(event) {
-          return console.log('socket closed', event);
+          return log('socket closed', event);
         };
       });
     }
@@ -168,7 +174,7 @@
 }).call(this);
 
 
-},{"domready":2,"cookie-cutter":3,"geolocation-stream":4,"node-uuid":5,"mapbox.js":6}],2:[function(require,module,exports){
+},{"domready":2,"geolocation-stream":3,"cookie-cutter":4,"node-uuid":5,"mapbox.js":6}],2:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -225,40 +231,6 @@
     })
 })
 },{}],3:[function(require,module,exports){
-var exports = module.exports = function (doc) {
-    if (!doc) doc = {};
-    if (typeof doc === 'string') doc = { cookie: doc };
-    if (doc.cookie === undefined) doc.cookie = '';
-    
-    var self = {};
-    self.get = function (key) {
-        var splat = doc.cookie.split(/;\s*/);
-        for (var i = 0; i < splat.length; i++) {
-            var ps = splat[i].split('=');
-            var k = unescape(ps[0]);
-            if (k === key) return unescape(ps[1]);
-        }
-        return undefined;
-    };
-    
-    self.set = function (key, value, opts) {
-        if (!opts) opts = {};
-        var s = escape(key) + '=' + escape(value);
-        if (opts.expires) s += '; expires=' + opts.expires;
-        if (opts.path) s += '; path=' + escape(opts.path);
-        doc.cookie = s;
-        return s;
-    };
-    return self;
-};
-
-if (typeof document !== 'undefined') {
-    var cookie = exports(document);
-    exports.get = cookie.get;
-    exports.set = cookie.set;
-}
-
-},{}],4:[function(require,module,exports){
 var stream = require('stream')
 var util = require('util')
 
@@ -298,7 +270,41 @@ GeolocationStream.prototype.onError = function(position) {
   this.emit('error', position)
 }
 
-},{"stream":7,"util":8}],9:[function(require,module,exports){
+},{"stream":7,"util":8}],4:[function(require,module,exports){
+var exports = module.exports = function (doc) {
+    if (!doc) doc = {};
+    if (typeof doc === 'string') doc = { cookie: doc };
+    if (doc.cookie === undefined) doc.cookie = '';
+    
+    var self = {};
+    self.get = function (key) {
+        var splat = doc.cookie.split(/;\s*/);
+        for (var i = 0; i < splat.length; i++) {
+            var ps = splat[i].split('=');
+            var k = unescape(ps[0]);
+            if (k === key) return unescape(ps[1]);
+        }
+        return undefined;
+    };
+    
+    self.set = function (key, value, opts) {
+        if (!opts) opts = {};
+        var s = escape(key) + '=' + escape(value);
+        if (opts.expires) s += '; expires=' + opts.expires;
+        if (opts.path) s += '; path=' + escape(opts.path);
+        doc.cookie = s;
+        return s;
+    };
+    return self;
+};
+
+if (typeof document !== 'undefined') {
+    var cookie = exports(document);
+    exports.get = cookie.get;
+    exports.set = cookie.set;
+}
+
+},{}],9:[function(require,module,exports){
 require=(function(e,t,n,r){function i(r){if(!n[r]){if(!t[r]){if(e)return e(r);throw new Error("Cannot find module '"+r+"'")}var s=n[r]={exports:{}};t[r][0](function(e){var n=t[r][1][e];return i(n?n:e)},s,s.exports)}return n[r].exports}for(var s=0;s<r.length;s++)i(r[s]);return i})(typeof require!=="undefined"&&require,{1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -5890,6 +5896,26 @@ module.exports={
   "_id": "mapbox.js@1.3.1",
   "_from": "mapbox.js@"
 }
+
+},{}],20:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+
+    HTTP_URLS: [
+        'http://a.tiles.mapbox.com/v3/',
+        'http://b.tiles.mapbox.com/v3/',
+        'http://c.tiles.mapbox.com/v3/',
+        'http://d.tiles.mapbox.com/v3/'],
+
+    FORCE_HTTPS: false,
+
+    HTTPS_URLS: [
+        'https://a.tiles.mapbox.com/v3/',
+        'https://b.tiles.mapbox.com/v3/',
+        'https://c.tiles.mapbox.com/v3/',
+        'https://d.tiles.mapbox.com/v3/']
+};
 
 },{}],18:[function(require,module,exports){
 (function(){/*
@@ -14757,26 +14783,6 @@ L.Map.include({
 
 }(window, document));
 })()
-},{}],20:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-
-    HTTP_URLS: [
-        'http://a.tiles.mapbox.com/v3/',
-        'http://b.tiles.mapbox.com/v3/',
-        'http://c.tiles.mapbox.com/v3/',
-        'http://d.tiles.mapbox.com/v3/'],
-
-    FORCE_HTTPS: false,
-
-    HTTPS_URLS: [
-        'https://a.tiles.mapbox.com/v3/',
-        'https://b.tiles.mapbox.com/v3/',
-        'https://c.tiles.mapbox.com/v3/',
-        'https://d.tiles.mapbox.com/v3/']
-};
-
 },{}],13:[function(require,module,exports){
 // Hardcode image path, because Leaflet's autodetection
 // fails, because mapbox.js is not named leaflet.js

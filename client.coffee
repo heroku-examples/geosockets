@@ -4,9 +4,15 @@ GeolocationStream = require 'geolocation-stream'
 uuid = require 'node-uuid'
 require 'mapbox.js' # auto-attaches to window.L
 
+# Custom Logger
+# Only debug if browser supports it and `debug` query param is present
+window.log = ->
+  if window.console and location.search.match(/debug/)
+    console.log.apply(console,arguments)
+
 class GeoPublisher
   position: {}
-  keepaliveInterval: 10*1000
+  keepaliveInterval: 40*1000
 
   constructor: (@socket) ->
     @stream = new GeolocationStream()
@@ -22,7 +28,7 @@ class GeoPublisher
       @publish()
 
     @stream.on "error", (err) ->
-      console.error err
+      log err
 
     # Heroku closes the WebSocket connection after 55 seconds of
     # inactivity; keep it alive by republishing periodically
@@ -74,7 +80,6 @@ class Map
       .addTo(@map)
 
   render: (users) =>
-
     # Who's already on the map?
     renderedUUIDs = @users.map (user) -> user.uuid
 
@@ -102,6 +107,7 @@ class Geosocket
 
     domready =>
 
+      # Sorry, old IE.
       unless window['WebSocket']
         alert "Your browser doesn't support WebSockets."
         return
@@ -124,17 +130,18 @@ class Geosocket
         # Start listening for browser geolocation events
         window.geoPublisher = new GeoPublisher(socket)
 
+      # Parse the JSON message array and each stringified JSON object
+      # within it, then render new users on the map
       socket.onmessage = (event) ->
-        # Parse the JSON message array and each stringified JSON object within it
         users = JSON.parse(event.data).map(JSON.parse)
         return if !users or users.length is 0
-        console.dir users
+        log "users", users
         map.render(users)
 
       socket.onerror = (error) ->
-        console.error error
+        log error
 
       socket.onclose = (event) ->
-        console.log 'socket closed', event
+        log 'socket closed', event
 
 window.Geosocket = Geosocket
