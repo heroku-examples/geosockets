@@ -13,7 +13,7 @@ window.log = ->
     console.log.apply(console,arguments)
 
 class GeoPublisher
-  keepaliveInterval: 45*1000
+  keepaliveInterval: 3*1000
   position:
     uuid: cookie.get 'geosockets-uuid'
     url: (document.querySelector('link[rel=canonical]') or window.location).href
@@ -34,29 +34,25 @@ class GeoPublisher
     # Heroku closes the connection after 55 seconds of inactivity;
     setInterval (=>@publish()), @keepaliveInterval
 
-  isReady: =>
-    @position.latitude and @socket.readyState is 1
-
-  getLatLng: =>
-    [@position.latitude, @position.longitude]
-
   publish: =>
     # @emit('publish', @position)
-    @socket.send JSON.stringify(@position) if @isReady
+    if @position.latitude and @socket.readyState is 1
+      @socket.send JSON.stringify(@position)
 
 class Map
   users: []
-  markers: []
   defaultLatLng: [40, -74.50]
   defaultZoom: 4
   markerOptions:
+    animate: true
     clickable: false
     keyboard: false
     opacity: 1
-    icon: L.icon
-      iconUrl: "https://geosockets.herokuapp.com/marker.svg"
-      iconSize: [10, 10]
-      iconAnchor: [5, 5]
+    radius: 5
+    fillColor: "#6762A6"
+    color: "#6762A6"
+    weight: 2
+    fillOpacity: 0.8
 
   constructor: (@domId) ->
 
@@ -75,30 +71,33 @@ class Map
       .map(@domId, 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
       .setView(@defaultLatLng, @defaultZoom)
 
+    # Attempt to center map using the Geolocation API
+    @map.locate
+      setView: true
+
+    # Accidentally scrolling with the trackpad sucks
     @map.scrollWheelZoom.disable()
 
-    @map.markers = L.mapbox.markerLayer()
-      .addTo(@map)
+  render: (newUsers) =>
 
-  render: (users) =>
-    # Who's already on the map?
-    renderedUUIDs = @users.map (user) -> user.uuid
+    # Put every current user on the map, even if they're already on it.
+    newUsers = newUsers.map (user) =>
+      user.marker = new L.CircleMarker([user.latitude, user.longitude], @markerOptions)
+      user.marker.addTo(@map)
+      user
 
-    # Pan to the user's location when the map is first rendered.
-    if renderedUUIDs.length is 0 and geoPublisher.isReady
-      @map.panTo(geoPublisher.getLatLng())
+    # Now that all current user markers are drawn,
+    # remove the previously rendered batch of markers
+    @users.map (user) =>
+      @map.removeLayer(user.marker)
 
-    for user in users
-      # Skip this user if they're already on the map
-      continue if user.uuid in renderedUUIDs
+    # The number of SVG groups should equal the number of users,
+    # Keep an eye on it for performance reasons.
+    log "marker count: ",
+      document.querySelectorAll('leaflet-container svg g').length
 
-      # Add marker to map
-      if user.latitude and user.longitude
-        L.marker([user.latitude, user.longitude], @markerOptions)
-          .addTo(@map.markers)
-
-      # Add this user to list of already rendered users
-      @users.push(user)
+    # The new users will be old next time
+    @users = newUsers
 
 class Geosocket
 
