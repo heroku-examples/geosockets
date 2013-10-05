@@ -1,37 +1,37 @@
-cookie = require 'cookie-cutter'
+# stream = require 'stream'
+# util = require 'util'
+window.cookie = require 'cookie-cutter'
 domready = require 'domready'
 GeolocationStream = require 'geolocation-stream'
 uuid = require 'node-uuid'
 require 'mapbox.js' # auto-attaches to window.L
 
-# Custom Logger
-# Only debug if browser supports it and `debug` query param is present
+# Custom Logger only produces console output if browser
+# supports it and a `debug` query param is present
 window.log = ->
-  if window.console and location.search.match(/debug/)
+  if window['console'] and location.search.match(/debug/)
     console.log.apply(console,arguments)
 
 class GeoPublisher
-  position: {}
-  keepaliveInterval: 40*1000
+  keepaliveInterval: 45*1000
+  position:
+    uuid: cookie.get 'geosockets-uuid'
+    url: (document.querySelector('link[rel=canonical]') or window.location).href
 
   constructor: (@socket) ->
-    @stream = new GeolocationStream()
+    @stream = GeolocationStream()
 
     @stream.on "data", (position) =>
-
-      # Firefox doesn't know how to JSON.stringify the coords
+      # Firefox doesn't know how to JSON.stringify the Coords
       # object, so just pull out the lat/lng pair
       @position.latitude = position.coords.latitude
       @position.longitude = position.coords.longitude
-      @position.uuid = cookie.get 'geosockets-uuid'
-      @position.url = window.url
       @publish()
 
     @stream.on "error", (err) ->
       log err
 
-    # Heroku closes the WebSocket connection after 55 seconds of
-    # inactivity; keep it alive by republishing periodically
+    # Heroku closes the connection after 55 seconds of inactivity;
     setInterval (=>@publish()), @keepaliveInterval
 
   isReady: =>
@@ -41,6 +41,7 @@ class GeoPublisher
     [@position.latitude, @position.longitude]
 
   publish: =>
+    # @emit('publish', @position)
     @socket.send JSON.stringify(@position) if @isReady
 
 class Map
@@ -115,10 +116,6 @@ class Geosocket
       # Create a cookie that the server can use to uniquely identify each client.
       unless cookie.get 'geosockets-uuid'
         cookie.set 'geosockets-uuid', uuid.v4()
-
-      # Determine the URL of the current page
-      # Look for a canonical URL, then default to window.location.href
-      window.url = (document.querySelector('link[rel=canonical]') or window.location).href
 
       # Create the map
       window.map = new Map(@config.domId)
