@@ -4,14 +4,13 @@ require 'mapbox.js'
 
 module.exports = class Map
   users: []
-  defaultLatLng: [40, -74.50]
+  defaultLatLng: [37.7720947, -122.4021025]
   defaultZoom: 4
   markerOptions:
     animate: true
     clickable: false
     keyboard: false
     opacity: 1
-    # radius: 5
     fillColor: "#6762A6"
     color: "#6762A6"
     weight: 2
@@ -26,20 +25,30 @@ module.exports = class Map
     link.href = "https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css"
     document.body.appendChild link
 
-    # Create the Mapbox map
-    @map = L.mapbox
-      .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
-      .setView(@defaultLatLng, @defaultZoom)
+    # Inject Geosockets CSS (like the custom fullscreen icon) into the DOM
+    link = document.createElement("link")
+    link.rel = "stylesheet"
+    link.type = "text/css"
+    link.href = "https://geosockets.herokuapp.com/styles.css"
+    document.body.appendChild link
 
-    # Attempt to center map using the Geolocation API
-    @map.locate
-      setView: true
+    # Render the map once the custom CSS styles are loaded
+    link.onload = =>
 
-    # var fullScreen =
-    @map.addControl(new L.Control.FullScreen());
+      # Create the Mapbox map
+      @map = L.mapbox
+        .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
+        .setView(@defaultLatLng, @defaultZoom)
 
-    # Accidentally scrolling with the trackpad sucks
-    @map.scrollWheelZoom.disable()
+      # Attempt to center map using the Geolocation API
+      @map.locate
+        setView: true
+
+      # Enable fullscreen option
+      @map.addControl(new L.Control.FullScreen());
+
+      # Accidentally scrolling with the trackpad sucks
+      @map.scrollWheelZoom.disable()
 
   render: (newUsers) =>
 
