@@ -40,7 +40,7 @@ class GeoPublisher
       @socket.send JSON.stringify(@position)
 
 class Map
-  oldUsers: []
+  users: []
   defaultLatLng: [40, -74.50]
   defaultZoom: 4
   markerOptions:
@@ -86,13 +86,14 @@ class Map
     # Put every current user on the map, even if they're already on it.
     newUsers = newUsers.map (user) =>
       user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], @markerOptions)
+      user.marker.map = @map # Hack so the marker can later remove itself
       user.marker.addTo(@map)
       user
 
     # Now that all current user markers are drawn,
     # remove the previously rendered batch of markers
-    @oldUsers.map (user) =>
-      @map.removeLayer(user.marker)
+    @users.map (user) =>
+      user.marker.remove()
 
     # The number of SVG groups should equal the number of users,
     # Keep an eye on it for performance reasons.
@@ -100,7 +101,7 @@ class Map
       document.querySelectorAll('leaflet-container svg g').length
 
     # The new users will be the oldies next time around. Cycle of life.
-    @oldUsers = newUsers
+    @users = newUsers
 
 class Geosocket
 
@@ -159,12 +160,21 @@ L.AnimatedCircleMarker = L.CircleMarker.extend
   onAdd: (map) ->
     L.CircleMarker::onAdd.call @, map
     @setRadius @options.startRadius
-    @timer = setInterval (=>@animate()), @options.interval
+    @timer = setInterval (=>@grow()), @options.interval
 
-  animate: ->
+  grow: ->
     @setRadius @_radius + @options.increment
     if @_radius >= @options.endRadius
       clearInterval @timer
+
+  remove: ->
+    @timer = setInterval (=>@shrink()), @options.interval
+
+  shrink: ->
+    @setRadius @_radius - @options.increment
+    if @_radius <= @options.startRadius
+      clearInterval @timer
+      @map.removeLayer(@)
 
 L.animatedMarker = (latlngs, options) ->
   new L.AnimatedCircleMarker(latlngs, options)
