@@ -71,6 +71,10 @@ only logs messages to the console if a `debug` query param is present in the URL
 [localhost:5000/?debug](http://localhost:5000/?debug). This allows you to view client
 behavior in production without exposing your site visitors to debugging data.
 
+## Testing
+
+Simple integration testing is done with [CasperJS](http://casperjs.org/), a navigation scripting & testing utility for [PhantomJS](http://phantomjs.org/). Casper is integrated into the app using the [grunt-casper](https://github.com/iamchrismiller/grunt-casper) plugin, and run with foreman. Each time you make a change to your client, the casper tests are run automatically.
+
 ### Deploying Geosockets to Heroku
 
 ```
