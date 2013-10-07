@@ -1,5 +1,4 @@
-# stream = require 'stream'
-# util = require 'util'
+window.mobile = require 'is-mobile'
 window.cookie = require 'cookie-cutter'
 domready = require 'domready'
 GeolocationStream = require 'geolocation-stream'
@@ -12,8 +11,9 @@ window.log = ->
   if window['console'] and location.search.match(/debug/)
     console.log.apply(console,arguments)
 
+
 class GeoPublisher
-  keepaliveInterval: 3*1000
+  keepaliveInterval: 30*1000
   position:
     uuid: cookie.get 'geosockets-uuid'
     url: (document.querySelector('link[rel=canonical]') or window.location).href
@@ -40,7 +40,7 @@ class GeoPublisher
       @socket.send JSON.stringify(@position)
 
 class Map
-  users: []
+  oldUsers: []
   defaultLatLng: [40, -74.50]
   defaultZoom: 4
   markerOptions:
@@ -48,7 +48,7 @@ class Map
     clickable: false
     keyboard: false
     opacity: 1
-    radius: 5
+    # radius: 5
     fillColor: "#6762A6"
     color: "#6762A6"
     weight: 2
@@ -80,15 +80,18 @@ class Map
 
   render: (newUsers) =>
 
+    # Don't render too many markers on mobile devices
+    newUsers = newUsers.reverse().slice(0, 50) if mobile()
+
     # Put every current user on the map, even if they're already on it.
     newUsers = newUsers.map (user) =>
-      user.marker = new L.CircleMarker([user.latitude, user.longitude], @markerOptions)
+      user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], @markerOptions)
       user.marker.addTo(@map)
       user
 
     # Now that all current user markers are drawn,
     # remove the previously rendered batch of markers
-    @users.map (user) =>
+    @oldUsers.map (user) =>
       @map.removeLayer(user.marker)
 
     # The number of SVG groups should equal the number of users,
@@ -96,8 +99,8 @@ class Map
     log "marker count: ",
       document.querySelectorAll('leaflet-container svg g').length
 
-    # The new users will be old next time
-    @users = newUsers
+    # The new users will be the oldies next time around. Cycle of life.
+    @oldUsers = newUsers
 
 class Geosocket
 
@@ -122,8 +125,8 @@ class Geosocket
       # Open the socket connection
       window.socket = new WebSocket(@config.host)
 
+      # Start listening for browser geolocation events
       socket.onopen = (event) ->
-        # Start listening for browser geolocation events
         window.geoPublisher = new GeoPublisher(socket)
 
       # Parse the JSON message array and each stringified JSON object
@@ -141,3 +144,27 @@ class Geosocket
         log 'socket closed', event
 
 window.Geosocket = Geosocket
+
+# Extend Leaflet's CircleMarker and add radius animation
+L.AnimatedCircleMarker = L.CircleMarker.extend
+  options:
+    interval: 20 #ms
+    startRadius: 0
+    endRadius: 10
+    increment: 2
+
+  initialize: (latlngs, options) ->
+    L.CircleMarker::initialize.call @, latlngs, options
+
+  onAdd: (map) ->
+    L.CircleMarker::onAdd.call @, map
+    @setRadius @options.startRadius
+    @timer = setInterval (=>@animate()), @options.interval
+
+  animate: ->
+    @setRadius @_radius + @options.increment
+    if @_radius >= @options.endRadius
+      clearInterval @timer
+
+L.animatedMarker = (latlngs, options) ->
+  new L.AnimatedCircleMarker(latlngs, options)
