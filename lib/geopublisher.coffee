@@ -4,6 +4,7 @@ GeolocationStream = require 'geolocation-stream'
 
 module.exports = class Geopublisher
   keepaliveInterval: 30*1000
+  lastPublishedAt: 0
   position: {}
 
   constructor: (@socket) ->
@@ -31,7 +32,15 @@ module.exports = class Geopublisher
     setInterval (=>@publish()), @keepaliveInterval
 
   publish: =>
-    # @emit('publish', @position)
-    if @position.latitude and @socket.readyState is 1
-      log "publish position:", @position
-      @socket.send JSON.stringify(@position)
+    # Don't publish if the socket is still connecting
+    return if socket.readyState isnt 1
+
+    # Don't publish if geodata isn't yet available.
+    return if !@position.latitude
+
+    # Don't publish too often
+    return if (Date.now()-@lastPublishedAt) < @keepaliveInterval/2
+
+    log "publish position:", @position
+    @socket.send JSON.stringify(@position)
+    @lastPublishedAt = Date.now()

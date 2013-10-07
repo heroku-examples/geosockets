@@ -3,9 +3,13 @@
 require 'mapbox.js'
 
 module.exports = class Map
+  lastRenderedAt: 0
+  maxRenderInterval: 5*1000
   users: []
   defaultLatLng: [37.7720947, -122.4021025]
   defaultZoom: 4
+  maxMarkersMobile: 50
+  maxMarkersDesktop: 200
   markerOptions:
     animate: true
     clickable: false
@@ -42,13 +46,22 @@ module.exports = class Map
 
   render: (newUsers) =>
 
+    # Don't render if we've rendered recently
+    if (Date.now()-@lastRenderedAt) < @maxRenderInterval
+      log "rendered recently, skipping this round"
+      return
+
     # Don't render too many markers on mobile devices
-    newUsers = newUsers.reverse().slice(0, 50) if mobile()
+    if mobile()
+      log "mobile device detected, capping markers at #{@maxMarkersMobile}"
+      newUsers = newUsers.reverse().slice(0, @maxMarkersMobile)
+
+    # Don't render too many markers on any device
+    newUsers = newUsers.reverse().slice(0, @maxMarkersDesktop)
 
     # Put every current user on the map, even if they're already on it.
     newUsers = newUsers.map (user) =>
       user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], @markerOptions)
-      # user.marker.map = @map # Hack so the marker can later remove itself
       user.marker.addTo(@map)
       user
 
@@ -64,6 +77,9 @@ module.exports = class Map
 
     # The new users will be the oldies next time around. Cycle of life, man.
     @users = newUsers
+
+    # Keep track of the current time, so as not to render too often.
+    @lastRenderedAt = Date.now()
 
 # Extend Leaflet's CircleMarker and add radius animation
 L.AnimatedCircleMarker = L.CircleMarker.extend
