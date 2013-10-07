@@ -8,7 +8,7 @@ module.exports = (grunt) ->
 
     watch:
       coffeeify:
-        files: ['client.coffee']
+        files: ['client.coffee', 'lib/*.coffee']
         tasks: ['coffeeify']
 
   grunt.loadNpmTasks 'grunt-coffeeify'

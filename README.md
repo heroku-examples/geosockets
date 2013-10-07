@@ -61,11 +61,18 @@ cd geosockets
 npm install
 ```
 
-Fire up redis, a grunt watcher, and the node webserver at [localhost:5000](http://localhost:5000):
+Fire up redis, a grunt watcher, and the node webserver at [localhost:5000/?debug](http://localhost:5000/?debug):
 
 ````
 foreman start
 ```
+
+## Debuggging
+
+The client uses a custom logging function, found in `lib/logger.coffee`. This function
+only logs messages to the console if a `debug` query param is present in the URL, e.g.
+[localhost:5000/?debug](http://localhost:5000/?debug). This allows you to view client
+behavior in production without exposing your site visitors to debugging data.
 
 ### Deploying Geosockets to Heroku
 

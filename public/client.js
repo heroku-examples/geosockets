@@ -1,145 +1,46 @@
 ;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
 (function() {
-  var GeoPublisher, GeolocationStream, Geosocket, Map, domready, uuid,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-  window.mobile = require('is-mobile');
-
-  window.cookie = require('cookie-cutter');
-
-  domready = require('domready');
-
-  GeolocationStream = require('geolocation-stream');
-
-  uuid = require('node-uuid');
-
-  require('mapbox.js');
-
-  window.log = function() {
+  module.exports = function() {
     if (window['console'] && location.search.match(/debug/)) {
       return console.log.apply(console, arguments);
     }
   };
 
-  GeoPublisher = (function() {
-    GeoPublisher.prototype.keepaliveInterval = 30 * 1000;
+}).call(this);
 
-    GeoPublisher.prototype.position = {
-      uuid: cookie.get('geosockets-uuid'),
-      url: (document.querySelector('link[rel=canonical]') || window.location).href
-    };
 
-    function GeoPublisher(socket) {
+},{}],2:[function(require,module,exports){
+(function() {
+  var Geopublisher, Geosocket, Map, domready;
+
+  window.mobile = require('is-mobile');
+
+  domready = require('domready');
+
+  Geopublisher = require('./lib/geopublisher.coffee');
+
+  Map = require('./lib/map.coffee');
+
+  window.log = require('./lib/logger.coffee');
+
+  window.Geosocket = Geosocket = (function() {
+    function Geosocket(host) {
       var _this = this;
-      this.socket = socket;
-      this.publish = __bind(this.publish, this);
-      this.stream = GeolocationStream();
-      this.stream.on("data", function(position) {
-        _this.position.latitude = position.coords.latitude;
-        _this.position.longitude = position.coords.longitude;
-        return _this.publish();
-      });
-      this.stream.on("error", function(err) {
-        return log(err);
-      });
-      setInterval((function() {
-        return _this.publish();
-      }), this.keepaliveInterval);
-    }
-
-    GeoPublisher.prototype.publish = function() {
-      if (this.position.latitude && this.socket.readyState === 1) {
-        return this.socket.send(JSON.stringify(this.position));
-      }
-    };
-
-    return GeoPublisher;
-
-  })();
-
-  Map = (function() {
-    Map.prototype.users = [];
-
-    Map.prototype.defaultLatLng = [40, -74.50];
-
-    Map.prototype.defaultZoom = 4;
-
-    Map.prototype.markerOptions = {
-      animate: true,
-      clickable: false,
-      keyboard: false,
-      opacity: 1,
-      fillColor: "#6762A6",
-      color: "#6762A6",
-      weight: 2,
-      fillOpacity: 0.8
-    };
-
-    function Map(domId) {
-      var link;
-      this.domId = domId;
-      this.render = __bind(this.render, this);
-      this.domId = this.domId.replace(/#/, '');
-      link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.type = "text/css";
-      link.href = "https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css";
-      document.body.appendChild(link);
-      this.map = L.mapbox.map(this.domId, 'examples.map-20v6611k').setView(this.defaultLatLng, this.defaultZoom);
-      this.map.locate({
-        setView: true
-      });
-      this.map.addControl(new L.Control.FullScreen());
-      this.map.scrollWheelZoom.disable();
-    }
-
-    Map.prototype.render = function(newUsers) {
-      var _this = this;
-      if (mobile()) {
-        newUsers = newUsers.reverse().slice(0, 50);
-      }
-      newUsers = newUsers.map(function(user) {
-        user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], _this.markerOptions);
-        user.marker.addTo(_this.map);
-        return user;
-      });
-      this.users.map(function(user) {
-        return user.marker.remove();
-      });
-      log("marker count: ", document.querySelectorAll('leaflet-container svg g').length);
-      return this.users = newUsers;
-    };
-
-    return Map;
-
-  })();
-
-  Geosocket = (function() {
-    function Geosocket(config) {
-      var _base, _base1,
-        _this = this;
-      this.config = config != null ? config : {};
-      (_base = this.config).host || (_base.host = location.origin.replace(/^http/, 'ws'));
-      (_base1 = this.config).domId || (_base1.domId = "geosockets");
+      this.host = host;
+      this.host || (this.host = location.origin.replace(/^http/, 'ws'));
       domready(function() {
         if (!window['WebSocket']) {
           alert("Your browser doesn't support WebSockets.");
           return;
         }
-        if (!cookie.get('geosockets-uuid')) {
-          cookie.set('geosockets-uuid', uuid.v4());
-        }
-        window.map = new Map(_this.config.domId);
-        window.socket = new WebSocket(_this.config.host);
+        window.map = new Map();
+        window.socket = new WebSocket(_this.host);
         socket.onopen = function(event) {
-          return window.geoPublisher = new GeoPublisher(socket);
+          return window.geoPublisher = new Geopublisher(socket);
         };
         socket.onmessage = function(event) {
           var users;
           users = JSON.parse(event.data).map(JSON.parse);
-          if (!users || users.length === 0) {
-            return;
-          }
           log("users", users);
           return map.render(users);
         };
@@ -150,100 +51,17 @@
           return log('socket closed', event);
         };
       });
+      this;
     }
 
     return Geosocket;
 
   })();
 
-  window.Geosocket = Geosocket;
-
-  L.AnimatedCircleMarker = L.CircleMarker.extend({
-    options: {
-      interval: 20,
-      startRadius: 0,
-      endRadius: 10,
-      increment: 2
-    },
-    initialize: function(latlngs, options) {
-      return L.CircleMarker.prototype.initialize.call(this, latlngs, options);
-    },
-    onAdd: function(map) {
-      var _this = this;
-      L.CircleMarker.prototype.onAdd.call(this, map);
-      this._map = map;
-      this.setRadius(this.options.startRadius);
-      return this.timer = setInterval((function() {
-        return _this.grow();
-      }), this.options.interval);
-    },
-    grow: function() {
-      this.setRadius(this._radius + this.options.increment);
-      if (this._radius >= this.options.endRadius) {
-        return clearInterval(this.timer);
-      }
-    },
-    remove: function() {
-      return this._map.removeLayer(this);
-    }
-  });
-
-  L.animatedMarker = function(latlngs, options) {
-    return new L.AnimatedCircleMarker(latlngs, options);
-  };
-
 }).call(this);
 
 
-},{"cookie-cutter":2,"is-mobile":3,"domready":4,"geolocation-stream":5,"node-uuid":6,"mapbox.js":7}],2:[function(require,module,exports){
-var exports = module.exports = function (doc) {
-    if (!doc) doc = {};
-    if (typeof doc === 'string') doc = { cookie: doc };
-    if (doc.cookie === undefined) doc.cookie = '';
-    
-    var self = {};
-    self.get = function (key) {
-        var splat = doc.cookie.split(/;\s*/);
-        for (var i = 0; i < splat.length; i++) {
-            var ps = splat[i].split('=');
-            var k = unescape(ps[0]);
-            if (k === key) return unescape(ps[1]);
-        }
-        return undefined;
-    };
-    
-    self.set = function (key, value, opts) {
-        if (!opts) opts = {};
-        var s = escape(key) + '=' + escape(value);
-        if (opts.expires) s += '; expires=' + opts.expires;
-        if (opts.path) s += '; path=' + escape(opts.path);
-        doc.cookie = s;
-        return s;
-    };
-    return self;
-};
-
-if (typeof document !== 'undefined') {
-    var cookie = exports(document);
-    exports.get = cookie.get;
-    exports.set = cookie.set;
-}
-
-},{}],3:[function(require,module,exports){
-module.exports = isMobile;
-
-function isMobile (ua) {
-  if (!ua && typeof navigator != 'undefined') ua = navigator.userAgent;
-  if (ua && ua.headers && typeof ua.headers['user-agent'] == 'string') {
-    ua = ua.headers['user-agent'];
-  }
-  if (typeof ua != 'string') return false;
-
-  return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(ua) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(ua.substr(0,4));
-}
-
-
-},{}],4:[function(require,module,exports){
+},{"./lib/geopublisher.coffee":3,"./lib/map.coffee":4,"./lib/logger.coffee":1,"domready":5,"is-mobile":6}],5:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -299,47 +117,204 @@ function isMobile (ua) {
       loaded ? fn() : fns.push(fn)
     })
 })
-},{}],5:[function(require,module,exports){
-var stream = require('stream')
-var util = require('util')
+},{}],6:[function(require,module,exports){
+module.exports = isMobile;
 
-function GeolocationStream(options) {
-  var me = this
-  stream.Stream.call(me)
-  this.readable = true
-  this.startMonitoring(options)
+function isMobile (ua) {
+  if (!ua && typeof navigator != 'undefined') ua = navigator.userAgent;
+  if (ua && ua.headers && typeof ua.headers['user-agent'] == 'string') {
+    ua = ua.headers['user-agent'];
+  }
+  if (typeof ua != 'string') return false;
+
+  return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(ua) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(ua.substr(0,4));
 }
 
-util.inherits(GeolocationStream, stream.Stream)
 
-module.exports = function(options) {
-  return new GeolocationStream(options)
+},{}],3:[function(require,module,exports){
+(function() {
+  var GeolocationStream, Geopublisher, cookie, uuid,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  cookie = require('cookie-cutter');
+
+  uuid = require('node-uuid');
+
+  GeolocationStream = require('geolocation-stream');
+
+  module.exports = Geopublisher = (function() {
+    Geopublisher.prototype.keepaliveInterval = 30 * 1000;
+
+    Geopublisher.prototype.position = {};
+
+    function Geopublisher(socket) {
+      var _this = this;
+      this.socket = socket;
+      this.publish = __bind(this.publish, this);
+      this.position.uuid = cookie.get('geosockets-uuid' || cookie.set('geosockets-uuid', uuid.v4()));
+      this.position.url = (document.querySelector('link[rel=canonical]') || window.location).href;
+      this.stream = GeolocationStream();
+      this.stream.on("data", function(position) {
+        _this.position.latitude = position.coords.latitude;
+        _this.position.longitude = position.coords.longitude;
+        return _this.publish();
+      });
+      this.stream.on("error", function(err) {
+        return log(err);
+      });
+      setInterval((function() {
+        return _this.publish();
+      }), this.keepaliveInterval);
+    }
+
+    Geopublisher.prototype.publish = function() {
+      if (this.position.latitude && this.socket.readyState === 1) {
+        log("publish position:", this.position);
+        return this.socket.send(JSON.stringify(this.position));
+      }
+    };
+
+    return Geopublisher;
+
+  })();
+
+}).call(this);
+
+
+},{"cookie-cutter":7,"node-uuid":8,"geolocation-stream":9}],4:[function(require,module,exports){
+(function() {
+  var Map,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  require('mapbox.js');
+
+  module.exports = Map = (function() {
+    Map.prototype.users = [];
+
+    Map.prototype.defaultLatLng = [40, -74.50];
+
+    Map.prototype.defaultZoom = 4;
+
+    Map.prototype.markerOptions = {
+      animate: true,
+      clickable: false,
+      keyboard: false,
+      opacity: 1,
+      fillColor: "#6762A6",
+      color: "#6762A6",
+      weight: 2,
+      fillOpacity: 0.8
+    };
+
+    function Map() {
+      this.render = __bind(this.render, this);
+      var link;
+      link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.type = "text/css";
+      link.href = "https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css";
+      document.body.appendChild(link);
+      this.map = L.mapbox.map('geosockets', 'examples.map-20v6611k').setView(this.defaultLatLng, this.defaultZoom);
+      this.map.locate({
+        setView: true
+      });
+      this.map.addControl(new L.Control.FullScreen());
+      this.map.scrollWheelZoom.disable();
+    }
+
+    Map.prototype.render = function(newUsers) {
+      var _this = this;
+      if (mobile()) {
+        newUsers = newUsers.reverse().slice(0, 50);
+      }
+      newUsers = newUsers.map(function(user) {
+        user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], _this.markerOptions);
+        user.marker.addTo(_this.map);
+        return user;
+      });
+      this.users.map(function(user) {
+        return user.marker.remove();
+      });
+      log("markers: ", document.querySelectorAll('.leaflet-container svg g').length);
+      return this.users = newUsers;
+    };
+
+    return Map;
+
+  })();
+
+  L.AnimatedCircleMarker = L.CircleMarker.extend({
+    options: {
+      interval: 20,
+      startRadius: 0,
+      endRadius: 10,
+      increment: 2
+    },
+    initialize: function(latlngs, options) {
+      return L.CircleMarker.prototype.initialize.call(this, latlngs, options);
+    },
+    onAdd: function(map) {
+      var _this = this;
+      L.CircleMarker.prototype.onAdd.call(this, map);
+      this._map = map;
+      this.setRadius(this.options.startRadius);
+      return this.timer = setInterval((function() {
+        return _this.grow();
+      }), this.options.interval);
+    },
+    grow: function() {
+      this.setRadius(this._radius + this.options.increment);
+      if (this._radius >= this.options.endRadius) {
+        return clearInterval(this.timer);
+      }
+    },
+    remove: function() {
+      return this._map.removeLayer(this);
+    }
+  });
+
+  L.animatedMarker = function(latlngs, options) {
+    return new L.AnimatedCircleMarker(latlngs, options);
+  };
+
+}).call(this);
+
+
+},{"mapbox.js":10}],7:[function(require,module,exports){
+var exports = module.exports = function (doc) {
+    if (!doc) doc = {};
+    if (typeof doc === 'string') doc = { cookie: doc };
+    if (doc.cookie === undefined) doc.cookie = '';
+    
+    var self = {};
+    self.get = function (key) {
+        var splat = doc.cookie.split(/;\s*/);
+        for (var i = 0; i < splat.length; i++) {
+            var ps = splat[i].split('=');
+            var k = unescape(ps[0]);
+            if (k === key) return unescape(ps[1]);
+        }
+        return undefined;
+    };
+    
+    self.set = function (key, value, opts) {
+        if (!opts) opts = {};
+        var s = escape(key) + '=' + escape(value);
+        if (opts.expires) s += '; expires=' + opts.expires;
+        if (opts.path) s += '; path=' + escape(opts.path);
+        doc.cookie = s;
+        return s;
+    };
+    return self;
+};
+
+if (typeof document !== 'undefined') {
+    var cookie = exports(document);
+    exports.get = cookie.get;
+    exports.set = cookie.set;
 }
 
-module.exports.GeolocationStream = GeolocationStream
-
-GeolocationStream.prototype.startMonitoring = function(options) {
-  this.watchID = navigator.geolocation.watchPosition(
-    this.onPosition.bind(this),
-    this.onError.bind(this),
-    options
-  )
-}
-
-GeolocationStream.prototype.stopMonitoring = function() {
-  navigator.geolocation.clearWatch(this.watchID)
-  this.emit('end')
-}
-
-GeolocationStream.prototype.onPosition = function(position) {
-  this.emit('data', position)
-}
-
-GeolocationStream.prototype.onError = function(position) {
-  this.emit('error', position)
-}
-
-},{"stream":8,"util":9}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 require=(function(e,t,n,r){function i(r){if(!n[r]){if(!t[r]){if(e)return e(r);throw new Error("Cannot find module '"+r+"'")}var s=n[r]={exports:{}};t[r][0](function(e){var n=t[r][1][e];return i(n?n:e)},s,s.exports)}return n[r].exports}for(var s=0;s<r.length;s++)i(r[s]);return i})(typeof require!=="undefined"&&require,{1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -4204,7 +4179,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 },{}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function(Buffer){//     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -4452,7 +4427,47 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 }).call(this);
 
 })(require("__browserify_buffer").Buffer)
-},{"crypto":11,"__browserify_buffer":10}],8:[function(require,module,exports){
+},{"crypto":12,"__browserify_buffer":11}],9:[function(require,module,exports){
+var stream = require('stream')
+var util = require('util')
+
+function GeolocationStream(options) {
+  var me = this
+  stream.Stream.call(me)
+  this.readable = true
+  this.startMonitoring(options)
+}
+
+util.inherits(GeolocationStream, stream.Stream)
+
+module.exports = function(options) {
+  return new GeolocationStream(options)
+}
+
+module.exports.GeolocationStream = GeolocationStream
+
+GeolocationStream.prototype.startMonitoring = function(options) {
+  this.watchID = navigator.geolocation.watchPosition(
+    this.onPosition.bind(this),
+    this.onError.bind(this),
+    options
+  )
+}
+
+GeolocationStream.prototype.stopMonitoring = function() {
+  navigator.geolocation.clearWatch(this.watchID)
+  this.emit('end')
+}
+
+GeolocationStream.prototype.onPosition = function(position) {
+  this.emit('data', position)
+}
+
+GeolocationStream.prototype.onError = function(position) {
+  this.emit('error', position)
+}
+
+},{"stream":13,"util":14}],13:[function(require,module,exports){
 var events = require('events');
 var util = require('util');
 
@@ -4573,7 +4588,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":12,"util":9}],9:[function(require,module,exports){
+},{"events":15,"util":14}],14:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -4926,11 +4941,11 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":12}],7:[function(require,module,exports){
+},{"events":15}],10:[function(require,module,exports){
 require('./leaflet');
 require('./mapbox');
 
-},{"./leaflet":13,"./mapbox":14}],15:[function(require,module,exports){
+},{"./leaflet":16,"./mapbox":17}],18:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -4984,7 +4999,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],12:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 (function(process){if (!process.EventEmitter) process.EventEmitter = function () {};
 
 var EventEmitter = exports.EventEmitter = process.EventEmitter;
@@ -5170,7 +5185,7 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":15}],11:[function(require,module,exports){
+},{"__browserify_process":18}],12:[function(require,module,exports){
 var sha = require('./sha')
 var rng = require('./rng')
 var md5 = require('./md5')
@@ -5246,7 +5261,7 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./sha":16,"./rng":17,"./md5":18}],17:[function(require,module,exports){
+},{"./sha":19,"./rng":20,"./md5":21}],20:[function(require,module,exports){
 // Original code adapted from Robert Kieffer.
 // details at https://github.com/broofa/node-uuid
 (function() {
@@ -5284,7 +5299,7 @@ exports.randomBytes = function(size, callback) {
   module.exports = whatwgRNG || mathRNG;
 
 }())
-},{}],16:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5496,7 +5511,7 @@ function binb2b64(binarray)
 }
 
 
-},{}],18:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
  * Digest Algorithm, as defined in RFC 1321.
@@ -5882,10 +5897,10 @@ exports.hex_md5 = hex_md5;
 exports.b64_md5 = b64_md5;
 exports.any_md5 = any_md5;
 
-},{}],13:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 window.L = require('leaflet/dist/leaflet-src');
 
-},{"leaflet/dist/leaflet-src":19}],20:[function(require,module,exports){
+},{"leaflet/dist/leaflet-src":22}],23:[function(require,module,exports){
 module.exports={
   "author": {
     "name": "MapBox"
@@ -5932,7 +5947,7 @@ module.exports={
   "_from": "mapbox.js@"
 }
 
-},{}],19:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 (function(){/*
  Leaflet, a JavaScript library for mobile-friendly interactive maps. http://leafletjs.com
  (c) 2010-2013, Vladimir Agafonkin
@@ -14798,7 +14813,7 @@ L.Map.include({
 
 }(window, document));
 })()
-},{}],21:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -14818,7 +14833,7 @@ module.exports = {
         'https://d.tiles.mapbox.com/v3/']
 };
 
-},{}],14:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 // Hardcode image path, because Leaflet's autodetection
 // fails, because mapbox.js is not named leaflet.js
 window.L.Icon.Default.imagePath = '//api.tiles.mapbox.com/mapbox.js/' + 'v' +
@@ -14841,7 +14856,7 @@ L.mapbox = module.exports = {
     template: require('mustache').to_html
 };
 
-},{"./package.json":20,"./src/geocoder":22,"./src/marker":23,"./src/tile_layer":24,"./src/share_control":25,"./src/legend_control":26,"./src/geocoder_control":27,"./src/grid_control":28,"./src/grid_layer":29,"./src/marker_layer":30,"./src/map":31,"./src/config":21,"./src/sanitize":32,"mustache":33}],32:[function(require,module,exports){
+},{"./package.json":23,"./src/geocoder":25,"./src/marker":26,"./src/tile_layer":27,"./src/share_control":28,"./src/legend_control":29,"./src/grid_control":30,"./src/geocoder_control":31,"./src/grid_layer":32,"./src/marker_layer":33,"./src/map":34,"./src/config":24,"./src/sanitize":35,"mustache":36}],35:[function(require,module,exports){
 'use strict';
 
 var html_sanitize = require('../ext/sanitizer/html-sanitizer-bundle.js');
@@ -14863,7 +14878,7 @@ module.exports = function(_) {
     return html_sanitize(_, cleanUrl, cleanId);
 };
 
-},{"../ext/sanitizer/html-sanitizer-bundle.js":34}],33:[function(require,module,exports){
+},{"../ext/sanitizer/html-sanitizer-bundle.js":37}],36:[function(require,module,exports){
 (function(){/*!
  * mustache.js - Logic-less {{mustache}} templates with JavaScript
  * http://github.com/janl/mustache.js
@@ -15476,7 +15491,7 @@ module.exports = function(_) {
 }())));
 
 })()
-},{}],22:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -15568,7 +15583,7 @@ module.exports = function(_) {
     return geocoder;
 };
 
-},{"./util":35,"./url":36,"./request":37}],23:[function(require,module,exports){
+},{"./util":38,"./url":39,"./request":40}],26:[function(require,module,exports){
 'use strict';
 
 var url = require('./url'),
@@ -15631,7 +15646,101 @@ module.exports = {
     createPopup: createPopup
 };
 
-},{"./url":36,"./sanitize":32}],25:[function(require,module,exports){
+},{"./sanitize":35,"./url":39}],27:[function(require,module,exports){
+'use strict';
+
+var util = require('./util'),
+    url = require('./url');
+
+var TileLayer = L.TileLayer.extend({
+    includes: [require('./load_tilejson')],
+
+    options: {
+        format: 'png'
+    },
+
+    // http://mapbox.com/developers/api/#image_quality
+    formats: [
+        'png',
+        // PNG
+        'png32', 'png64', 'png128', 'png256',
+        // JPG
+        'jpg70', 'jpg80', 'jpg90'],
+
+    initialize: function(_, options) {
+        L.TileLayer.prototype.initialize.call(this, undefined, options);
+
+        this._tilejson = {};
+
+        if (options && options.detectRetina &&
+            L.Browser.retina && options.retinaVersion) {
+            _ = options.retinaVersion;
+        }
+
+        if (options && options.format) {
+            util.strict_oneof(options.format, this.formats);
+        }
+
+        this._loadTileJSON(_);
+    },
+
+    setFormat: function(_) {
+        util.strict(_, 'string');
+        this.options.format = _;
+        this.redraw();
+        return this;
+    },
+
+    // disable the setUrl function, which is not available on mapbox tilelayers
+    setUrl: null,
+
+    _setTileJSON: function(json) {
+        util.strict(json, 'object');
+
+        L.extend(this.options, {
+            tiles: json.tiles,
+            attribution: json.attribution,
+            minZoom: json.minzoom,
+            maxZoom: json.maxzoom,
+            tms: json.scheme === 'tms',
+            bounds: json.bounds && util.lbounds(json.bounds)
+        });
+
+        this._tilejson = json;
+        this.redraw();
+        return this;
+    },
+
+    getTileJSON: function() {
+        return this._tilejson;
+    },
+
+    // this is an exception to mapbox.js naming rules because it's called
+    // by `L.map`
+    getTileUrl: function(tilePoint) {
+        var tiles = this.options.tiles,
+            index = Math.abs(tilePoint.x + tilePoint.y) % tiles.length,
+            url = tiles[index];
+
+        var templated = L.Util.template(url, tilePoint);
+        if (!templated) return templated;
+        else return templated.replace('.png', '.' + this.options.format);
+    },
+
+    // TileJSON.TileLayers are added to the map immediately, so that they get
+    // the desired z-index, but do not update until the TileJSON has been loaded.
+    _update: function() {
+        if (this.options.tiles) {
+            L.TileLayer.prototype._update.call(this);
+        }
+    }
+});
+
+module.exports = function(_, options) {
+    return new TileLayer(_, options);
+};
+
+},{"./util":38,"./url":39,"./load_tilejson":41}],28:[function(require,module,exports){
 'use strict';
 
 var ShareControl = L.Control.extend({
@@ -15730,101 +15839,7 @@ module.exports = function(_, options) {
     return new ShareControl(_, options);
 };
 
-},{"./load_tilejson":38}],24:[function(require,module,exports){
-'use strict';
-
-var util = require('./util'),
-    url = require('./url');
-
-var TileLayer = L.TileLayer.extend({
-    includes: [require('./load_tilejson')],
-
-    options: {
-        format: 'png'
-    },
-
-    // http://mapbox.com/developers/api/#image_quality
-    formats: [
-        'png',
-        // PNG
-        'png32', 'png64', 'png128', 'png256',
-        // JPG
-        'jpg70', 'jpg80', 'jpg90'],
-
-    initialize: function(_, options) {
-        L.TileLayer.prototype.initialize.call(this, undefined, options);
-
-        this._tilejson = {};
-
-        if (options && options.detectRetina &&
-            L.Browser.retina && options.retinaVersion) {
-            _ = options.retinaVersion;
-        }
-
-        if (options && options.format) {
-            util.strict_oneof(options.format, this.formats);
-        }
-
-        this._loadTileJSON(_);
-    },
-
-    setFormat: function(_) {
-        util.strict(_, 'string');
-        this.options.format = _;
-        this.redraw();
-        return this;
-    },
-
-    // disable the setUrl function, which is not available on mapbox tilelayers
-    setUrl: null,
-
-    _setTileJSON: function(json) {
-        util.strict(json, 'object');
-
-        L.extend(this.options, {
-            tiles: json.tiles,
-            attribution: json.attribution,
-            minZoom: json.minzoom,
-            maxZoom: json.maxzoom,
-            tms: json.scheme === 'tms',
-            bounds: json.bounds && util.lbounds(json.bounds)
-        });
-
-        this._tilejson = json;
-        this.redraw();
-        return this;
-    },
-
-    getTileJSON: function() {
-        return this._tilejson;
-    },
-
-    // this is an exception to mapbox.js naming rules because it's called
-    // by `L.map`
-    getTileUrl: function(tilePoint) {
-        var tiles = this.options.tiles,
-            index = Math.abs(tilePoint.x + tilePoint.y) % tiles.length,
-            url = tiles[index];
-
-        var templated = L.Util.template(url, tilePoint);
-        if (!templated) return templated;
-        else return templated.replace('.png', '.' + this.options.format);
-    },
-
-    // TileJSON.TileLayers are added to the map immediately, so that they get
-    // the desired z-index, but do not update until the TileJSON has been loaded.
-    _update: function() {
-        if (this.options.tiles) {
-            L.TileLayer.prototype._update.call(this);
-        }
-    }
-});
-
-module.exports = function(_, options) {
-    return new TileLayer(_, options);
-};
-
-},{"./util":35,"./load_tilejson":38,"./url":36}],26:[function(require,module,exports){
+},{"./load_tilejson":41}],29:[function(require,module,exports){
 'use strict';
 
 var LegendControl = L.Control.extend({
@@ -15892,7 +15907,7 @@ module.exports = function(options) {
     return new LegendControl(options);
 };
 
-},{"./sanitize":32}],27:[function(require,module,exports){
+},{"./sanitize":35}],31:[function(require,module,exports){
 'use strict';
 
 var geocoder = require('./geocoder');
@@ -16025,7 +16040,7 @@ module.exports = function(options) {
     return new GeocoderControl(options);
 };
 
-},{"./geocoder":22}],29:[function(require,module,exports){
+},{"./geocoder":25}],32:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16253,112 +16268,7 @@ module.exports = function(_, options) {
     return new GridLayer(_, options);
 };
 
-},{"./util":35,"./url":36,"./request":37,"./grid":39,"./load_tilejson":38}],30:[function(require,module,exports){
-'use strict';
-
-var util = require('./util');
-var urlhelper = require('./url');
-var request = require('./request');
-var marker = require('./marker');
-
-// # markerLayer
-//
-// A layer of markers, loaded from MapBox or else. Adds the ability
-// to reset markers, filter them, and load them from a GeoJSON URL.
-var MarkerLayer = L.FeatureGroup.extend({
-    options: {
-        filter: function() { return true; },
-        sanitizer: require('./sanitize')
-    },
-
-    initialize: function(_, options) {
-        L.setOptions(this, options);
-
-        this._layers = {};
-
-        if (typeof _ === 'string') {
-            util.idUrl(_, this);
-        // javascript object of TileJSON data
-        } else if (_ && typeof _ === 'object') {
-            this.setGeoJSON(_);
-        }
-    },
-
-    setGeoJSON: function(_) {
-        this._geojson = _;
-        this.clearLayers();
-        this._initialize(_);
-    },
-
-    getGeoJSON: function() {
-        return this._geojson;
-    },
-
-    loadURL: function(url) {
-        url = urlhelper.jsonify(url);
-        request(url, L.bind(function(err, json) {
-            if (err) {
-                util.log('could not load markers at ' + url);
-                this.fire('error', {error: err});
-            } else if (json) {
-                this.setGeoJSON(json);
-                this.fire('ready');
-            }
-        }, this));
-        return this;
-    },
-
-    loadID: function(id) {
-        return this.loadURL(urlhelper.base() + id + '/markers.geojson');
-    },
-
-    setFilter: function(_) {
-        this.options.filter = _;
-        if (this._geojson) {
-            this.clearLayers();
-            this._initialize(this._geojson);
-        }
-        return this;
-    },
-
-    getFilter: function() {
-        return this.options.filter;
-    },
-
-    _initialize: function(json) {
-        var features = L.Util.isArray(json) ? json : json.features,
-            i, len;
-
-        if (features) {
-            for (i = 0, len = features.length; i < len; i++) {
-                // Only add this if geometry or geometries are set and not null
-                if (features[i].geometries || features[i].geometry || features[i].features) {
-                    this._initialize(features[i]);
-                }
-            }
-        } else if (this.options.filter(json)) {
-
-            var layer = L.GeoJSON.geometryToLayer(json, marker.style),
-                popupHtml = marker.createPopup(json, this.options.sanitizer);
-
-            layer.feature = json;
-
-            if (popupHtml) {
-                layer.bindPopup(popupHtml, {
-                    closeButton: false
-                });
-            }
-
-            this.addLayer(layer);
-        }
-    }
-});
-
-module.exports = function(_, options) {
-    return new MarkerLayer(_, options);
-};
-
-},{"./util":35,"./url":36,"./request":37,"./marker":23,"./sanitize":32}],31:[function(require,module,exports){
+},{"./util":38,"./url":39,"./request":40,"./grid":42,"./load_tilejson":41}],34:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16480,7 +16390,112 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":35,"./tile_layer":24,"./marker_layer":30,"./grid_layer":29,"./grid_control":28,"./legend_control":26,"./load_tilejson":38}],35:[function(require,module,exports){
+},{"./util":38,"./tile_layer":27,"./marker_layer":33,"./grid_layer":32,"./grid_control":30,"./legend_control":29,"./load_tilejson":41}],33:[function(require,module,exports){
+'use strict';
+
+var util = require('./util');
+var urlhelper = require('./url');
+var request = require('./request');
+var marker = require('./marker');
+
+// # markerLayer
+//
+// A layer of markers, loaded from MapBox or else. Adds the ability
+// to reset markers, filter them, and load them from a GeoJSON URL.
+var MarkerLayer = L.FeatureGroup.extend({
+    options: {
+        filter: function() { return true; },
+        sanitizer: require('./sanitize')
+    },
+
+    initialize: function(_, options) {
+        L.setOptions(this, options);
+
+        this._layers = {};
+
+        if (typeof _ === 'string') {
+            util.idUrl(_, this);
+        // javascript object of TileJSON data
+        } else if (_ && typeof _ === 'object') {
+            this.setGeoJSON(_);
+        }
+    },
+
+    setGeoJSON: function(_) {
+        this._geojson = _;
+        this.clearLayers();
+        this._initialize(_);
+    },
+
+    getGeoJSON: function() {
+        return this._geojson;
+    },
+
+    loadURL: function(url) {
+        url = urlhelper.jsonify(url);
+        request(url, L.bind(function(err, json) {
+            if (err) {
+                util.log('could not load markers at ' + url);
+                this.fire('error', {error: err});
+            } else if (json) {
+                this.setGeoJSON(json);
+                this.fire('ready');
+            }
+        }, this));
+        return this;
+    },
+
+    loadID: function(id) {
+        return this.loadURL(urlhelper.base() + id + '/markers.geojson');
+    },
+
+    setFilter: function(_) {
+        this.options.filter = _;
+        if (this._geojson) {
+            this.clearLayers();
+            this._initialize(this._geojson);
+        }
+        return this;
+    },
+
+    getFilter: function() {
+        return this.options.filter;
+    },
+
+    _initialize: function(json) {
+        var features = L.Util.isArray(json) ? json : json.features,
+            i, len;
+
+        if (features) {
+            for (i = 0, len = features.length; i < len; i++) {
+                // Only add this if geometry or geometries are set and not null
+                if (features[i].geometries || features[i].geometry || features[i].features) {
+                    this._initialize(features[i]);
+                }
+            }
+        } else if (this.options.filter(json)) {
+
+            var layer = L.GeoJSON.geometryToLayer(json, marker.style),
+                popupHtml = marker.createPopup(json, this.options.sanitizer);
+
+            layer.feature = json;
+
+            if (popupHtml) {
+                layer.bindPopup(popupHtml, {
+                    closeButton: false
+                });
+            }
+
+            this.addLayer(layer);
+        }
+    }
+});
+
+module.exports = function(_, options) {
+    return new MarkerLayer(_, options);
+};
+
+},{"./util":38,"./url":39,"./request":40,"./marker":26,"./sanitize":35}],38:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -16515,7 +16530,7 @@ module.exports = {
     }
 };
 
-},{}],34:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 (function(){// Copyright (C) 2010 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18963,7 +18978,7 @@ if (typeof module !== 'undefined') {
 }
 
 })()
-},{}],39:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 'use strict';
 
 function utfDecode(c) {
@@ -18981,7 +18996,7 @@ module.exports = function(data) {
     };
 };
 
-},{}],36:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 'use strict';
 
 var config = require('./config');
@@ -19020,7 +19035,7 @@ module.exports = {
     }
 };
 
-},{"./config":21}],38:[function(require,module,exports){
+},{"./config":24}],41:[function(require,module,exports){
 'use strict';
 
 var request = require('./request'),
@@ -19049,7 +19064,7 @@ module.exports = {
     }
 };
 
-},{"./request":37,"./url":36,"./util":35}],28:[function(require,module,exports){
+},{"./request":40,"./url":39,"./util":38}],30:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -19243,7 +19258,7 @@ module.exports = function(_, options) {
     return new GridControl(_, options);
 };
 
-},{"./util":35,"./sanitize":32,"mustache":33}],37:[function(require,module,exports){
+},{"./util":38,"./sanitize":35,"mustache":36}],40:[function(require,module,exports){
 'use strict';
 
 var corslite = require('corslite'),
@@ -19267,7 +19282,7 @@ module.exports = function(url, callback) {
     });
 };
 
-},{"./util":35,"corslite":40,"json3":41}],40:[function(require,module,exports){
+},{"./util":38,"corslite":43,"json3":44}],43:[function(require,module,exports){
 function xhr(url, callback, cors) {
 
     if (typeof window.XMLHttpRequest === 'undefined') {
@@ -19351,7 +19366,7 @@ function xhr(url, callback, cors) {
 
 if (typeof module !== 'undefined') module.exports = xhr;
 
-},{}],41:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 /*! JSON v3.2.5 | http://bestiejs.github.io/json3 | Copyright 2012-2013, Kit Cambridge | http://kit.mit-license.org */
 ;(function (window) {
   // Convenience aliases.
@@ -20203,5 +20218,5 @@ if (typeof module !== 'undefined') module.exports = xhr;
   }
 }(this));
 
-},{}]},{},[1])
+},{}]},{},[2])
 ;
