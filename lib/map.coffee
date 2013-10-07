@@ -25,30 +25,20 @@ module.exports = class Map
     link.href = "https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css"
     document.body.appendChild link
 
-    # Inject Geosockets CSS (like the custom fullscreen icon) into the DOM
-    link = document.createElement("link")
-    link.rel = "stylesheet"
-    link.type = "text/css"
-    link.href = "https://geosockets.herokuapp.com/styles.css"
-    document.body.appendChild link
+    # Create the Mapbox map
+    @map = L.mapbox
+      .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
+      .setView(@defaultLatLng, @defaultZoom)
 
-    # Render the map once the custom CSS styles are loaded
-    link.onload = =>
+    # Attempt to center map using the Geolocation API
+    @map.locate
+      setView: true
 
-      # Create the Mapbox map
-      @map = L.mapbox
-        .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
-        .setView(@defaultLatLng, @defaultZoom)
+    # Enable fullscreen option
+    @map.addControl(new L.Control.FullScreen());
 
-      # Attempt to center map using the Geolocation API
-      @map.locate
-        setView: true
-
-      # Enable fullscreen option
-      @map.addControl(new L.Control.FullScreen());
-
-      # Accidentally scrolling with the trackpad sucks
-      @map.scrollWheelZoom.disable()
+    # Accidentally scrolling with the trackpad sucks
+    @map.scrollWheelZoom.disable()
 
   render: (newUsers) =>
 

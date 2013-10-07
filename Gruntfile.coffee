@@ -3,7 +3,7 @@ module.exports = (grunt) ->
 
     coffeeify:
       basic:
-        src: ['client.coffee', 'lib/not-npm-ish/*.js']
+        src: ['client.coffee', 'lib/vendor/*.js']
         dest: "public/client.js"
 
     watch:

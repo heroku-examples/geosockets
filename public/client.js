@@ -370,26 +370,18 @@ function isMobile (ua) {
 
     function Map() {
       this.render = __bind(this.render, this);
-      var link,
-        _this = this;
+      var link;
       link = document.createElement("link");
       link.rel = "stylesheet";
       link.type = "text/css";
       link.href = "https://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css";
       document.body.appendChild(link);
-      link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.type = "text/css";
-      link.href = "https://geosockets.herokuapp.com/styles.css";
-      document.body.appendChild(link);
-      link.onload = function() {
-        _this.map = L.mapbox.map('geosockets', 'examples.map-20v6611k').setView(_this.defaultLatLng, _this.defaultZoom);
-        _this.map.locate({
-          setView: true
-        });
-        _this.map.addControl(new L.Control.FullScreen());
-        return _this.map.scrollWheelZoom.disable();
-      };
+      this.map = L.mapbox.map('geosockets', 'examples.map-20v6611k').setView(this.defaultLatLng, this.defaultZoom);
+      this.map.locate({
+        setView: true
+      });
+      this.map.addControl(new L.Control.FullScreen());
+      this.map.scrollWheelZoom.disable();
     }
 
     Map.prototype.render = function(newUsers) {
@@ -5431,45 +5423,7 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./sha":20,"./rng":21,"./md5":22}],21:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
-
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
-},{}],20:[function(require,module,exports){
+},{"./sha":20,"./rng":21,"./md5":22}],20:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5681,6 +5635,44 @@ function binb2b64(binarray)
 }
 
 
+},{}],21:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
 },{}],22:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
@@ -15026,7 +15018,7 @@ L.mapbox = module.exports = {
     template: require('mustache').to_html
 };
 
-},{"./package.json":24,"./src/geocoder":26,"./src/marker":27,"./src/tile_layer":28,"./src/share_control":29,"./src/legend_control":30,"./src/geocoder_control":31,"./src/grid_control":32,"./src/grid_layer":33,"./src/marker_layer":34,"./src/map":35,"./src/config":25,"./src/sanitize":36,"mustache":37}],36:[function(require,module,exports){
+},{"./package.json":24,"./src/geocoder":26,"./src/marker":27,"./src/tile_layer":28,"./src/legend_control":29,"./src/share_control":30,"./src/geocoder_control":31,"./src/grid_control":32,"./src/grid_layer":33,"./src/marker_layer":34,"./src/map":35,"./src/config":25,"./src/sanitize":36,"mustache":37}],36:[function(require,module,exports){
 'use strict';
 
 var html_sanitize = require('../ext/sanitizer/html-sanitizer-bundle.js');
@@ -15913,6 +15905,74 @@ module.exports = function(_, options) {
 },{"./util":39,"./url":40,"./load_tilejson":42}],29:[function(require,module,exports){
 'use strict';
 
+var LegendControl = L.Control.extend({
+
+    options: {
+        position: 'bottomright',
+        sanitizer: require('./sanitize')
+    },
+
+    initialize: function(options) {
+        L.setOptions(this, options);
+        this._legends = {};
+    },
+
+    onAdd: function(map) {
+        this._container = L.DomUtil.create('div', 'map-legends wax-legends');
+        L.DomEvent.disableClickPropagation(this._container);
+
+        this._update();
+
+        return this._container;
+    },
+
+    addLegend: function(text) {
+        if (!text) { return this; }
+
+        if (!this._legends[text]) {
+            this._legends[text] = 0;
+        }
+
+        this._legends[text]++;
+        return this._update();
+    },
+
+    removeLegend: function(text) {
+        if (!text) { return this; }
+        if (this._legends[text]) this._legends[text]--;
+        return this._update();
+    },
+
+    _update: function() {
+        if (!this._map) { return this; }
+
+        this._container.innerHTML = '';
+        var hide = 'none';
+
+        for (var i in this._legends) {
+            if (this._legends.hasOwnProperty(i) && this._legends[i]) {
+                var div = this._container.appendChild(document.createElement('div'));
+                div.className = 'map-legend wax-legend';
+                div.innerHTML = this.options.sanitizer(i);
+                hide = 'block';
+            }
+        }
+
+        // hide the control entirely unless there is at least one legend;
+        // otherwise there will be a small grey blemish on the map.
+        this._container.style.display = hide;
+
+        return this;
+    }
+});
+
+module.exports = function(options) {
+    return new LegendControl(options);
+};
+
+},{"./sanitize":36}],30:[function(require,module,exports){
+'use strict';
+
 var ShareControl = L.Control.extend({
     includes: [require('./load_tilejson')],
 
@@ -16009,75 +16069,7 @@ module.exports = function(_, options) {
     return new ShareControl(_, options);
 };
 
-},{"./load_tilejson":42}],30:[function(require,module,exports){
-'use strict';
-
-var LegendControl = L.Control.extend({
-
-    options: {
-        position: 'bottomright',
-        sanitizer: require('./sanitize')
-    },
-
-    initialize: function(options) {
-        L.setOptions(this, options);
-        this._legends = {};
-    },
-
-    onAdd: function(map) {
-        this._container = L.DomUtil.create('div', 'map-legends wax-legends');
-        L.DomEvent.disableClickPropagation(this._container);
-
-        this._update();
-
-        return this._container;
-    },
-
-    addLegend: function(text) {
-        if (!text) { return this; }
-
-        if (!this._legends[text]) {
-            this._legends[text] = 0;
-        }
-
-        this._legends[text]++;
-        return this._update();
-    },
-
-    removeLegend: function(text) {
-        if (!text) { return this; }
-        if (this._legends[text]) this._legends[text]--;
-        return this._update();
-    },
-
-    _update: function() {
-        if (!this._map) { return this; }
-
-        this._container.innerHTML = '';
-        var hide = 'none';
-
-        for (var i in this._legends) {
-            if (this._legends.hasOwnProperty(i) && this._legends[i]) {
-                var div = this._container.appendChild(document.createElement('div'));
-                div.className = 'map-legend wax-legend';
-                div.innerHTML = this.options.sanitizer(i);
-                hide = 'block';
-            }
-        }
-
-        // hide the control entirely unless there is at least one legend;
-        // otherwise there will be a small grey blemish on the map.
-        this._container.style.display = hide;
-
-        return this;
-    }
-});
-
-module.exports = function(options) {
-    return new LegendControl(options);
-};
-
-},{"./sanitize":36}],31:[function(require,module,exports){
+},{"./load_tilejson":42}],31:[function(require,module,exports){
 'use strict';
 
 var geocoder = require('./geocoder');
@@ -16665,7 +16657,7 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":39,"./tile_layer":28,"./marker_layer":34,"./grid_layer":33,"./grid_control":32,"./legend_control":30,"./load_tilejson":42}],39:[function(require,module,exports){
+},{"./util":39,"./tile_layer":28,"./marker_layer":34,"./grid_layer":33,"./grid_control":32,"./legend_control":29,"./load_tilejson":42}],39:[function(require,module,exports){
 'use strict';
 
 module.exports = {

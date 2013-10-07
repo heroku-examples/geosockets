@@ -10,12 +10,9 @@ See the demo app at [geosockets.herokuapp.com](https://geosockets.herokuapp.com)
 The Geosockets javascript client can be used on any website:
 
 ```html
+<link rel="stylesheet" type="text/css" href="https://geosockets.herokuapp.com/styles.css">
 <script src="https://geosockets.herokuapp.com/client.js"></script>
-<script>
-  window.geosocket = new Geosocket({
-    host: "wss://geosockets.herokuapp.com" // (default)
-  });
-</script>
+<script>window.geosocket = new Geosocket("wss://geosockets.herokuapp.com");</script>
 <div id="geosockets"></div>
 ```
 
