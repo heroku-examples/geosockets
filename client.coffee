@@ -75,6 +75,9 @@ class Map
     @map.locate
       setView: true
 
+    # var fullScreen =
+    @map.addControl(new L.Control.FullScreen());
+
     # Accidentally scrolling with the trackpad sucks
     @map.scrollWheelZoom.disable()
 
@@ -86,7 +89,7 @@ class Map
     # Put every current user on the map, even if they're already on it.
     newUsers = newUsers.map (user) =>
       user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], @markerOptions)
-      user.marker.map = @map # Hack so the marker can later remove itself
+      # user.marker.map = @map # Hack so the marker can later remove itself
       user.marker.addTo(@map)
       user
 
@@ -159,6 +162,7 @@ L.AnimatedCircleMarker = L.CircleMarker.extend
 
   onAdd: (map) ->
     L.CircleMarker::onAdd.call @, map
+    @_map = map
     @setRadius @options.startRadius
     @timer = setInterval (=>@grow()), @options.interval
 
@@ -168,13 +172,14 @@ L.AnimatedCircleMarker = L.CircleMarker.extend
       clearInterval @timer
 
   remove: ->
-    @timer = setInterval (=>@shrink()), @options.interval
+    @_map.removeLayer(@)
+    # @timer = setInterval (=>@shrink()), @options.interval
 
-  shrink: ->
-    @setRadius @_radius - @options.increment
-    if @_radius <= @options.startRadius
-      clearInterval @timer
-      @map.removeLayer(@)
+  # shrink: ->
+  #   @setRadius @_radius - @options.increment
+  #   if @_radius <= @options.startRadius
+  #     clearInterval @timer
+  #     @map.removeLayer(@)
 
 L.animatedMarker = (latlngs, options) ->
   new L.AnimatedCircleMarker(latlngs, options)

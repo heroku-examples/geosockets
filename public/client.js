@@ -89,6 +89,7 @@
       this.map.locate({
         setView: true
       });
+      this.map.addControl(new L.Control.FullScreen());
       this.map.scrollWheelZoom.disable();
     }
 
@@ -99,7 +100,6 @@
       }
       newUsers = newUsers.map(function(user) {
         user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], _this.markerOptions);
-        user.marker.map = _this.map;
         user.marker.addTo(_this.map);
         return user;
       });
@@ -171,6 +171,7 @@
     onAdd: function(map) {
       var _this = this;
       L.CircleMarker.prototype.onAdd.call(this, map);
+      this._map = map;
       this.setRadius(this.options.startRadius);
       return this.timer = setInterval((function() {
         return _this.grow();
@@ -183,17 +184,7 @@
       }
     },
     remove: function() {
-      var _this = this;
-      return this.timer = setInterval((function() {
-        return _this.shrink();
-      }), this.options.interval);
-    },
-    shrink: function() {
-      this.setRadius(this._radius - this.options.increment);
-      if (this._radius <= this.options.startRadius) {
-        clearInterval(this.timer);
-        return this.map.removeLayer(this);
-      }
+      return this._map.removeLayer(this);
     }
   });
 
@@ -15485,70 +15476,7 @@ module.exports = function(_) {
 }())));
 
 })()
-},{}],23:[function(require,module,exports){
-'use strict';
-
-var url = require('./url'),
-    sanitize = require('./sanitize');
-
-// mapbox-related markers functionality
-// provide an icon from mapbox's simple-style spec and hosted markers
-// service
-function icon(fp) {
-    fp = fp || {};
-
-    var sizes = {
-            small: [20, 50],
-            medium: [30, 70],
-            large: [35, 90]
-        },
-        size = fp['marker-size'] || 'medium',
-        symbol = (fp['marker-symbol']) ? '-' + fp['marker-symbol'] : '',
-        color = (fp['marker-color'] || '7e7e7e').replace('#', '');
-
-    return L.icon({
-        iconUrl: url.base() + 'marker/' +
-            'pin-' + size.charAt(0) + symbol + '+' + color +
-            // detect and use retina markers, which are x2 resolution
-            ((L.Browser.retina) ? '@2x' : '') + '.png',
-        iconSize: sizes[size],
-        iconAnchor: [sizes[size][0] / 2, sizes[size][1] / 2],
-        popupAnchor: [0, -sizes[size][1] / 2]
-    });
-}
-
-// a factory that provides markers for Leaflet from MapBox's
-// [simple-style specification](https://github.com/mapbox/simplestyle-spec)
-// and [Markers API](http://mapbox.com/developers/api/#markers).
-function style(f, latlon) {
-    return L.marker(latlon, {
-        icon: icon(f.properties),
-        title: f.properties.title
-    });
-}
-
-function createPopup(f, sanitizer) {
-    if (!f || !f.properties) return '';
-    var popup = '';
-
-    if (f.properties.title) {
-        popup += '<div class="marker-title">' + f.properties.title + '</div>';
-    }
-
-    if (f.properties.description) {
-        popup += '<div class="marker-description">' + f.properties.description + '</div>';
-    }
-
-    return (sanitizer || sanitize)(popup);
-}
-
-module.exports = {
-    icon: icon,
-    style: style,
-    createPopup: createPopup
-};
-
-},{"./url":35,"./sanitize":32}],22:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -15640,101 +15568,70 @@ module.exports = function(_) {
     return geocoder;
 };
 
-},{"./util":36,"./url":35,"./request":37}],24:[function(require,module,exports){
+},{"./util":35,"./url":36,"./request":37}],23:[function(require,module,exports){
 'use strict';
 
-var util = require('./util'),
-    url = require('./url');
+var url = require('./url'),
+    sanitize = require('./sanitize');
 
-var TileLayer = L.TileLayer.extend({
-    includes: [require('./load_tilejson')],
+// mapbox-related markers functionality
+// provide an icon from mapbox's simple-style spec and hosted markers
+// service
+function icon(fp) {
+    fp = fp || {};
 
-    options: {
-        format: 'png'
-    },
+    var sizes = {
+            small: [20, 50],
+            medium: [30, 70],
+            large: [35, 90]
+        },
+        size = fp['marker-size'] || 'medium',
+        symbol = (fp['marker-symbol']) ? '-' + fp['marker-symbol'] : '',
+        color = (fp['marker-color'] || '7e7e7e').replace('#', '');
 
-    // http://mapbox.com/developers/api/#image_quality
-    formats: [
-        'png',
-        // PNG
-        'png32', 'png64', 'png128', 'png256',
-        // JPG
-        'jpg70', 'jpg80', 'jpg90'],
+    return L.icon({
+        iconUrl: url.base() + 'marker/' +
+            'pin-' + size.charAt(0) + symbol + '+' + color +
+            // detect and use retina markers, which are x2 resolution
+            ((L.Browser.retina) ? '@2x' : '') + '.png',
+        iconSize: sizes[size],
+        iconAnchor: [sizes[size][0] / 2, sizes[size][1] / 2],
+        popupAnchor: [0, -sizes[size][1] / 2]
+    });
+}
 
-    initialize: function(_, options) {
-        L.TileLayer.prototype.initialize.call(this, undefined, options);
+// a factory that provides markers for Leaflet from MapBox's
+// [simple-style specification](https://github.com/mapbox/simplestyle-spec)
+// and [Markers API](http://mapbox.com/developers/api/#markers).
+function style(f, latlon) {
+    return L.marker(latlon, {
+        icon: icon(f.properties),
+        title: f.properties.title
+    });
+}
 
-        this._tilejson = {};
+function createPopup(f, sanitizer) {
+    if (!f || !f.properties) return '';
+    var popup = '';
 
-        if (options && options.detectRetina &&
-            L.Browser.retina && options.retinaVersion) {
-            _ = options.retinaVersion;
-        }
-
-        if (options && options.format) {
-            util.strict_oneof(options.format, this.formats);
-        }
-
-        this._loadTileJSON(_);
-    },
-
-    setFormat: function(_) {
-        util.strict(_, 'string');
-        this.options.format = _;
-        this.redraw();
-        return this;
-    },
-
-    // disable the setUrl function, which is not available on mapbox tilelayers
-    setUrl: null,
-
-    _setTileJSON: function(json) {
-        util.strict(json, 'object');
-
-        L.extend(this.options, {
-            tiles: json.tiles,
-            attribution: json.attribution,
-            minZoom: json.minzoom,
-            maxZoom: json.maxzoom,
-            tms: json.scheme === 'tms',
-            bounds: json.bounds && util.lbounds(json.bounds)
-        });
-
-        this._tilejson = json;
-        this.redraw();
-        return this;
-    },
-
-    getTileJSON: function() {
-        return this._tilejson;
-    },
-
-    // this is an exception to mapbox.js naming rules because it's called
-    // by `L.map`
-    getTileUrl: function(tilePoint) {
-        var tiles = this.options.tiles,
-            index = Math.abs(tilePoint.x + tilePoint.y) % tiles.length,
-            url = tiles[index];
-
-        var templated = L.Util.template(url, tilePoint);
-        if (!templated) return templated;
-        else return templated.replace('.png', '.' + this.options.format);
-    },
-
-    // TileJSON.TileLayers are added to the map immediately, so that they get
-    // the desired z-index, but do not update until the TileJSON has been loaded.
-    _update: function() {
-        if (this.options.tiles) {
-            L.TileLayer.prototype._update.call(this);
-        }
+    if (f.properties.title) {
+        popup += '<div class="marker-title">' + f.properties.title + '</div>';
     }
-});
 
-module.exports = function(_, options) {
-    return new TileLayer(_, options);
+    if (f.properties.description) {
+        popup += '<div class="marker-description">' + f.properties.description + '</div>';
+    }
+
+    return (sanitizer || sanitize)(popup);
+}
+
+module.exports = {
+    icon: icon,
+    style: style,
+    createPopup: createPopup
 };
 
-},{"./util":36,"./url":35,"./load_tilejson":38}],25:[function(require,module,exports){
+},{"./url":36,"./sanitize":32}],25:[function(require,module,exports){
 'use strict';
 
 var ShareControl = L.Control.extend({
@@ -15833,7 +15730,101 @@ module.exports = function(_, options) {
     return new ShareControl(_, options);
 };
 
-},{"./load_tilejson":38}],26:[function(require,module,exports){
+},{"./load_tilejson":38}],24:[function(require,module,exports){
+'use strict';
+
+var util = require('./util'),
+    url = require('./url');
+
+var TileLayer = L.TileLayer.extend({
+    includes: [require('./load_tilejson')],
+
+    options: {
+        format: 'png'
+    },
+
+    // http://mapbox.com/developers/api/#image_quality
+    formats: [
+        'png',
+        // PNG
+        'png32', 'png64', 'png128', 'png256',
+        // JPG
+        'jpg70', 'jpg80', 'jpg90'],
+
+    initialize: function(_, options) {
+        L.TileLayer.prototype.initialize.call(this, undefined, options);
+
+        this._tilejson = {};
+
+        if (options && options.detectRetina &&
+            L.Browser.retina && options.retinaVersion) {
+            _ = options.retinaVersion;
+        }
+
+        if (options && options.format) {
+            util.strict_oneof(options.format, this.formats);
+        }
+
+        this._loadTileJSON(_);
+    },
+
+    setFormat: function(_) {
+        util.strict(_, 'string');
+        this.options.format = _;
+        this.redraw();
+        return this;
+    },
+
+    // disable the setUrl function, which is not available on mapbox tilelayers
+    setUrl: null,
+
+    _setTileJSON: function(json) {
+        util.strict(json, 'object');
+
+        L.extend(this.options, {
+            tiles: json.tiles,
+            attribution: json.attribution,
+            minZoom: json.minzoom,
+            maxZoom: json.maxzoom,
+            tms: json.scheme === 'tms',
+            bounds: json.bounds && util.lbounds(json.bounds)
+        });
+
+        this._tilejson = json;
+        this.redraw();
+        return this;
+    },
+
+    getTileJSON: function() {
+        return this._tilejson;
+    },
+
+    // this is an exception to mapbox.js naming rules because it's called
+    // by `L.map`
+    getTileUrl: function(tilePoint) {
+        var tiles = this.options.tiles,
+            index = Math.abs(tilePoint.x + tilePoint.y) % tiles.length,
+            url = tiles[index];
+
+        var templated = L.Util.template(url, tilePoint);
+        if (!templated) return templated;
+        else return templated.replace('.png', '.' + this.options.format);
+    },
+
+    // TileJSON.TileLayers are added to the map immediately, so that they get
+    // the desired z-index, but do not update until the TileJSON has been loaded.
+    _update: function() {
+        if (this.options.tiles) {
+            L.TileLayer.prototype._update.call(this);
+        }
+    }
+});
+
+module.exports = function(_, options) {
+    return new TileLayer(_, options);
+};
+
+},{"./util":35,"./load_tilejson":38,"./url":36}],26:[function(require,module,exports){
 'use strict';
 
 var LegendControl = L.Control.extend({
@@ -16262,7 +16253,7 @@ module.exports = function(_, options) {
     return new GridLayer(_, options);
 };
 
-},{"./util":36,"./url":35,"./request":37,"./grid":39,"./load_tilejson":38}],30:[function(require,module,exports){
+},{"./util":35,"./url":36,"./request":37,"./grid":39,"./load_tilejson":38}],30:[function(require,module,exports){
 'use strict';
 
 var util = require('./util');
@@ -16367,7 +16358,7 @@ module.exports = function(_, options) {
     return new MarkerLayer(_, options);
 };
 
-},{"./util":36,"./url":35,"./request":37,"./marker":23,"./sanitize":32}],31:[function(require,module,exports){
+},{"./util":35,"./url":36,"./request":37,"./marker":23,"./sanitize":32}],31:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16489,7 +16480,7 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":36,"./tile_layer":24,"./marker_layer":30,"./grid_control":28,"./grid_layer":29,"./legend_control":26,"./load_tilejson":38}],36:[function(require,module,exports){
+},{"./util":35,"./tile_layer":24,"./marker_layer":30,"./grid_layer":29,"./grid_control":28,"./legend_control":26,"./load_tilejson":38}],35:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -18990,7 +18981,7 @@ module.exports = function(data) {
     };
 };
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 'use strict';
 
 var config = require('./config');
@@ -19058,7 +19049,7 @@ module.exports = {
     }
 };
 
-},{"./request":37,"./url":35,"./util":36}],28:[function(require,module,exports){
+},{"./request":37,"./url":36,"./util":35}],28:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -19252,7 +19243,7 @@ module.exports = function(_, options) {
     return new GridControl(_, options);
 };
 
-},{"./util":36,"./sanitize":32,"mustache":33}],37:[function(require,module,exports){
+},{"./util":35,"./sanitize":32,"mustache":33}],37:[function(require,module,exports){
 'use strict';
 
 var corslite = require('corslite'),
@@ -19276,7 +19267,7 @@ module.exports = function(url, callback) {
     });
 };
 
-},{"./util":36,"corslite":40,"json3":41}],40:[function(require,module,exports){
+},{"./util":35,"corslite":40,"json3":41}],40:[function(require,module,exports){
 function xhr(url, callback, cors) {
 
     if (typeof window.XMLHttpRequest === 'undefined') {
