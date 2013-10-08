@@ -21,17 +21,17 @@ module.exports = class Map
     opacity: 1
     fillColor: "#9674B7"
     fillOpacity: 1
-    radius: 8
+    radius: 6
   userMarkerOptions:
     clickable: false
     keyboard: false
-    weight: 3
+    weight: 2
     color: "#9674B7"
     opacity: 1
     fillColor: "#FFF"
     fillOpacity: 0.7
-    radius: 20
-    dashArray: "4, 8"
+    radius: 14
+    dashArray: "3, 6"
 
   constructor: () ->
 
@@ -55,6 +55,9 @@ module.exports = class Map
 
     # Accidentally scrolling with the trackpad sucks
     @map.scrollWheelZoom.disable()
+
+    #
+    @map.doubleClickZoom.disable()
 
   render: (newUsers) =>
 
