@@ -21,6 +21,9 @@ window.Geosocket = class Geosocket
         alert "Your browser doesn't support WebSockets."
         return
 
+      unless cookie.get 'geosockets-uuid'
+        cookie.set 'geosockets-uuid', uuid.v4()
+
       # Create the map
       window.map = new Map()
 

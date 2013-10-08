@@ -149,6 +149,9 @@ L.control.fullscreen = function (options) {
           alert("Your browser doesn't support WebSockets.");
           return;
         }
+        if (!cookie.get('geosockets-uuid')) {
+          cookie.set('geosockets-uuid', uuid.v4());
+        }
         window.map = new Map();
         window.socket = new WebSocket(_this.host);
         socket.onopen = function(event) {
@@ -177,41 +180,7 @@ L.control.fullscreen = function (options) {
 }).call(this);
 
 
-},{"./lib/geopublisher.coffee":4,"./lib/map.coffee":5,"./lib/logger.coffee":2,"cookie-cutter":6,"is-mobile":7,"domready":8}],6:[function(require,module,exports){
-var exports = module.exports = function (doc) {
-    if (!doc) doc = {};
-    if (typeof doc === 'string') doc = { cookie: doc };
-    if (doc.cookie === undefined) doc.cookie = '';
-    
-    var self = {};
-    self.get = function (key) {
-        var splat = doc.cookie.split(/;\s*/);
-        for (var i = 0; i < splat.length; i++) {
-            var ps = splat[i].split('=');
-            var k = unescape(ps[0]);
-            if (k === key) return unescape(ps[1]);
-        }
-        return undefined;
-    };
-    
-    self.set = function (key, value, opts) {
-        if (!opts) opts = {};
-        var s = escape(key) + '=' + escape(value);
-        if (opts.expires) s += '; expires=' + opts.expires;
-        if (opts.path) s += '; path=' + escape(opts.path);
-        doc.cookie = s;
-        return s;
-    };
-    return self;
-};
-
-if (typeof document !== 'undefined') {
-    var cookie = exports(document);
-    exports.get = cookie.get;
-    exports.set = cookie.set;
-}
-
-},{}],7:[function(require,module,exports){
+},{"./lib/geopublisher.coffee":4,"./lib/map.coffee":5,"./lib/logger.coffee":2,"is-mobile":6,"domready":7,"cookie-cutter":8}],6:[function(require,module,exports){
 module.exports = isMobile;
 
 function isMobile (ua) {
@@ -225,7 +194,7 @@ function isMobile (ua) {
 }
 
 
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -281,7 +250,99 @@ function isMobile (ua) {
       loaded ? fn() : fns.push(fn)
     })
 })
-},{}],5:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
+var exports = module.exports = function (doc) {
+    if (!doc) doc = {};
+    if (typeof doc === 'string') doc = { cookie: doc };
+    if (doc.cookie === undefined) doc.cookie = '';
+    
+    var self = {};
+    self.get = function (key) {
+        var splat = doc.cookie.split(/;\s*/);
+        for (var i = 0; i < splat.length; i++) {
+            var ps = splat[i].split('=');
+            var k = unescape(ps[0]);
+            if (k === key) return unescape(ps[1]);
+        }
+        return undefined;
+    };
+    
+    self.set = function (key, value, opts) {
+        if (!opts) opts = {};
+        var s = escape(key) + '=' + escape(value);
+        if (opts.expires) s += '; expires=' + opts.expires;
+        if (opts.path) s += '; path=' + escape(opts.path);
+        doc.cookie = s;
+        return s;
+    };
+    return self;
+};
+
+if (typeof document !== 'undefined') {
+    var cookie = exports(document);
+    exports.get = cookie.get;
+    exports.set = cookie.set;
+}
+
+},{}],4:[function(require,module,exports){
+(function() {
+  var GeolocationStream, Geopublisher, uuid,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  uuid = require('node-uuid');
+
+  GeolocationStream = require('geolocation-stream');
+
+  module.exports = Geopublisher = (function() {
+    Geopublisher.prototype.keepaliveInterval = 30 * 1000;
+
+    Geopublisher.prototype.lastPublishedAt = 0;
+
+    Geopublisher.prototype.position = {};
+
+    function Geopublisher(socket) {
+      var _this = this;
+      this.socket = socket;
+      this.publish = __bind(this.publish, this);
+      this.position.uuid = cookie.get('geosockets-uuid' || cookie.set('geosockets-uuid', uuid.v4()));
+      this.position.url = (document.querySelector('link[rel=canonical]') || window.location).href;
+      this.stream = GeolocationStream();
+      this.stream.on("data", function(position) {
+        _this.position.latitude = position.coords.latitude;
+        _this.position.longitude = position.coords.longitude;
+        return _this.publish();
+      });
+      this.stream.on("error", function(err) {
+        return log(err);
+      });
+      setInterval((function() {
+        return _this.publish();
+      }), this.keepaliveInterval);
+    }
+
+    Geopublisher.prototype.publish = function() {
+      if (socket.readyState !== 1) {
+        return;
+      }
+      if (!this.position.latitude) {
+        return;
+      }
+      if ((Date.now() - this.lastPublishedAt) < this.keepaliveInterval / 2) {
+        return;
+      }
+      log("publish position:", this.position);
+      this.socket.send(JSON.stringify(this.position));
+      return this.lastPublishedAt = Date.now();
+    };
+
+    return Geopublisher;
+
+  })();
+
+}).call(this);
+
+
+},{"node-uuid":9,"geolocation-stream":10}],5:[function(require,module,exports){
 (function() {
   var Map, merge,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -405,147 +466,7 @@ function isMobile (ua) {
 }).call(this);
 
 
-},{"merge":9,"mapbox.js":10}],4:[function(require,module,exports){
-(function() {
-  var GeolocationStream, Geopublisher, uuid,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-  uuid = require('node-uuid');
-
-  GeolocationStream = require('geolocation-stream');
-
-  module.exports = Geopublisher = (function() {
-    Geopublisher.prototype.keepaliveInterval = 30 * 1000;
-
-    Geopublisher.prototype.lastPublishedAt = 0;
-
-    Geopublisher.prototype.position = {};
-
-    function Geopublisher(socket) {
-      var _this = this;
-      this.socket = socket;
-      this.publish = __bind(this.publish, this);
-      this.position.uuid = cookie.get('geosockets-uuid' || cookie.set('geosockets-uuid', uuid.v4()));
-      this.position.url = (document.querySelector('link[rel=canonical]') || window.location).href;
-      this.stream = GeolocationStream();
-      this.stream.on("data", function(position) {
-        _this.position.latitude = position.coords.latitude;
-        _this.position.longitude = position.coords.longitude;
-        return _this.publish();
-      });
-      this.stream.on("error", function(err) {
-        return log(err);
-      });
-      setInterval((function() {
-        return _this.publish();
-      }), this.keepaliveInterval);
-    }
-
-    Geopublisher.prototype.publish = function() {
-      if (socket.readyState !== 1) {
-        return;
-      }
-      if (!this.position.latitude) {
-        return;
-      }
-      if ((Date.now() - this.lastPublishedAt) < this.keepaliveInterval / 2) {
-        return;
-      }
-      log("publish position:", this.position);
-      this.socket.send(JSON.stringify(this.position));
-      return this.lastPublishedAt = Date.now();
-    };
-
-    return Geopublisher;
-
-  })();
-
-}).call(this);
-
-
-},{"node-uuid":11,"geolocation-stream":12}],9:[function(require,module,exports){
-/*!
- * @name JavaScript/NodeJS Merge v1.1.2
- * @author yeikos
- * @repository https://github.com/yeikos/js.merge
-
- * Copyright 2013 yeikos - MIT license
- * https://raw.github.com/yeikos/js.merge/master/LICENSE
- */
-
-;(function(isNode) {
-
-	function merge() {
-
-		var items = Array.prototype.slice.call(arguments),
-			result = items.shift(),
-			deep = (result === true),
-			size = items.length,
-			item, index, key;
-
-		if (deep || typeOf(result) !== 'object')
-
-			result = {};
-
-		for (index=0;index<size;++index)
-
-			if (typeOf(item = items[index]) === 'object')
-
-				for (key in item)
-
-					result[key] = deep ? clone(item[key]) : item[key];
-
-		return result;
-
-	}
-
-	function clone(input) {
-
-		var output = input,
-			type = typeOf(input),
-			index, size;
-
-		if (type === 'array') {
-
-			output = [];
-			size = input.length;
-
-			for (index=0;index<size;++index)
-
-				output[index] = clone(input[index]);
-
-		} else if (type === 'object') {
-
-			output = {};
-
-			for (index in input)
-
-				output[index] = clone(input[index]);
-
-		}
-
-		return output;
-
-	}
-
-	function typeOf(input) {
-
-		return ({}).toString.call(input).match(/\s([\w]+)/)[1].toLowerCase();
-
-	}
-
-	if (isNode) {
-
-		module.exports = merge;
-
-	} else {
-
-		window.merge = merge;
-
-	}
-
-})(typeof module === 'object' && module && typeof module.exports === 'object' && module.exports);
-},{}],13:[function(require,module,exports){
+},{"merge":11,"mapbox.js":12}],13:[function(require,module,exports){
 require=(function(e,t,n,r){function i(r){if(!n[r]){if(!t[r]){if(e)return e(r);throw new Error("Cannot find module '"+r+"'")}var s=n[r]={exports:{}};t[r][0](function(e){var n=t[r][1][e];return i(n?n:e)},s,s.exports)}return n[r].exports}for(var s=0;s<r.length;s++)i(r[s]);return i})(typeof require!=="undefined"&&require,{1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -4410,7 +4331,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 },{}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],11:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function(Buffer){//     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -4658,7 +4579,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 }).call(this);
 
 })(require("__browserify_buffer").Buffer)
-},{"crypto":14,"__browserify_buffer":13}],12:[function(require,module,exports){
+},{"crypto":14,"__browserify_buffer":13}],10:[function(require,module,exports){
 var stream = require('stream')
 var util = require('util')
 
@@ -4698,7 +4619,89 @@ GeolocationStream.prototype.onError = function(position) {
   this.emit('error', position)
 }
 
-},{"stream":15,"util":16}],15:[function(require,module,exports){
+},{"stream":15,"util":16}],11:[function(require,module,exports){
+/*!
+ * @name JavaScript/NodeJS Merge v1.1.2
+ * @author yeikos
+ * @repository https://github.com/yeikos/js.merge
+
+ * Copyright 2013 yeikos - MIT license
+ * https://raw.github.com/yeikos/js.merge/master/LICENSE
+ */
+
+;(function(isNode) {
+
+	function merge() {
+
+		var items = Array.prototype.slice.call(arguments),
+			result = items.shift(),
+			deep = (result === true),
+			size = items.length,
+			item, index, key;
+
+		if (deep || typeOf(result) !== 'object')
+
+			result = {};
+
+		for (index=0;index<size;++index)
+
+			if (typeOf(item = items[index]) === 'object')
+
+				for (key in item)
+
+					result[key] = deep ? clone(item[key]) : item[key];
+
+		return result;
+
+	}
+
+	function clone(input) {
+
+		var output = input,
+			type = typeOf(input),
+			index, size;
+
+		if (type === 'array') {
+
+			output = [];
+			size = input.length;
+
+			for (index=0;index<size;++index)
+
+				output[index] = clone(input[index]);
+
+		} else if (type === 'object') {
+
+			output = {};
+
+			for (index in input)
+
+				output[index] = clone(input[index]);
+
+		}
+
+		return output;
+
+	}
+
+	function typeOf(input) {
+
+		return ({}).toString.call(input).match(/\s([\w]+)/)[1].toLowerCase();
+
+	}
+
+	if (isNode) {
+
+		module.exports = merge;
+
+	} else {
+
+		window.merge = merge;
+
+	}
+
+})(typeof module === 'object' && module && typeof module.exports === 'object' && module.exports);
+},{}],15:[function(require,module,exports){
 var events = require('events');
 var util = require('util');
 
@@ -5172,7 +5175,7 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":17}],10:[function(require,module,exports){
+},{"events":17}],12:[function(require,module,exports){
 require('./leaflet');
 require('./mapbox');
 
@@ -5492,7 +5495,45 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./sha":21,"./rng":22,"./md5":23}],21:[function(require,module,exports){
+},{"./sha":21,"./rng":22,"./md5":23}],22:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
+},{}],21:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5704,44 +5745,6 @@ function binb2b64(binarray)
 }
 
 
-},{}],22:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
-
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
 },{}],23:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
@@ -15087,7 +15090,7 @@ L.mapbox = module.exports = {
     template: require('mustache').to_html
 };
 
-},{"./package.json":25,"./src/geocoder":27,"./src/marker":28,"./src/tile_layer":29,"./src/share_control":30,"./src/geocoder_control":31,"./src/legend_control":32,"./src/grid_control":33,"./src/grid_layer":34,"./src/map":35,"./src/marker_layer":36,"./src/config":26,"./src/sanitize":37,"mustache":38}],37:[function(require,module,exports){
+},{"./package.json":25,"./src/marker":27,"./src/geocoder":28,"./src/tile_layer":29,"./src/share_control":30,"./src/legend_control":31,"./src/geocoder_control":32,"./src/grid_control":33,"./src/grid_layer":34,"./src/marker_layer":35,"./src/map":36,"./src/config":26,"./src/sanitize":37,"mustache":38}],37:[function(require,module,exports){
 'use strict';
 
 var html_sanitize = require('../ext/sanitizer/html-sanitizer-bundle.js');
@@ -15725,6 +15728,69 @@ module.exports = function(_) {
 },{}],27:[function(require,module,exports){
 'use strict';
 
+var url = require('./url'),
+    sanitize = require('./sanitize');
+
+// mapbox-related markers functionality
+// provide an icon from mapbox's simple-style spec and hosted markers
+// service
+function icon(fp) {
+    fp = fp || {};
+
+    var sizes = {
+            small: [20, 50],
+            medium: [30, 70],
+            large: [35, 90]
+        },
+        size = fp['marker-size'] || 'medium',
+        symbol = (fp['marker-symbol']) ? '-' + fp['marker-symbol'] : '',
+        color = (fp['marker-color'] || '7e7e7e').replace('#', '');
+
+    return L.icon({
+        iconUrl: url.base() + 'marker/' +
+            'pin-' + size.charAt(0) + symbol + '+' + color +
+            // detect and use retina markers, which are x2 resolution
+            ((L.Browser.retina) ? '@2x' : '') + '.png',
+        iconSize: sizes[size],
+        iconAnchor: [sizes[size][0] / 2, sizes[size][1] / 2],
+        popupAnchor: [0, -sizes[size][1] / 2]
+    });
+}
+
+// a factory that provides markers for Leaflet from MapBox's
+// [simple-style specification](https://github.com/mapbox/simplestyle-spec)
+// and [Markers API](http://mapbox.com/developers/api/#markers).
+function style(f, latlon) {
+    return L.marker(latlon, {
+        icon: icon(f.properties),
+        title: f.properties.title
+    });
+}
+
+function createPopup(f, sanitizer) {
+    if (!f || !f.properties) return '';
+    var popup = '';
+
+    if (f.properties.title) {
+        popup += '<div class="marker-title">' + f.properties.title + '</div>';
+    }
+
+    if (f.properties.description) {
+        popup += '<div class="marker-description">' + f.properties.description + '</div>';
+    }
+
+    return (sanitizer || sanitize)(popup);
+}
+
+module.exports = {
+    icon: icon,
+    style: style,
+    createPopup: createPopup
+};
+
+},{"./url":40,"./sanitize":37}],28:[function(require,module,exports){
+'use strict';
+
 var util = require('./util'),
     urlhelper = require('./url'),
     request = require('./request');
@@ -15814,70 +15880,268 @@ module.exports = function(_) {
     return geocoder;
 };
 
-},{"./util":40,"./url":41,"./request":42}],28:[function(require,module,exports){
+},{"./util":41,"./url":40,"./request":42}],29:[function(require,module,exports){
 'use strict';
 
-var url = require('./url'),
-    sanitize = require('./sanitize');
+var util = require('./util'),
+    url = require('./url');
 
-// mapbox-related markers functionality
-// provide an icon from mapbox's simple-style spec and hosted markers
-// service
-function icon(fp) {
-    fp = fp || {};
+var TileLayer = L.TileLayer.extend({
+    includes: [require('./load_tilejson')],
 
-    var sizes = {
-            small: [20, 50],
-            medium: [30, 70],
-            large: [35, 90]
-        },
-        size = fp['marker-size'] || 'medium',
-        symbol = (fp['marker-symbol']) ? '-' + fp['marker-symbol'] : '',
-        color = (fp['marker-color'] || '7e7e7e').replace('#', '');
+    options: {
+        format: 'png'
+    },
 
-    return L.icon({
-        iconUrl: url.base() + 'marker/' +
-            'pin-' + size.charAt(0) + symbol + '+' + color +
-            // detect and use retina markers, which are x2 resolution
-            ((L.Browser.retina) ? '@2x' : '') + '.png',
-        iconSize: sizes[size],
-        iconAnchor: [sizes[size][0] / 2, sizes[size][1] / 2],
-        popupAnchor: [0, -sizes[size][1] / 2]
-    });
-}
+    // http://mapbox.com/developers/api/#image_quality
+    formats: [
+        'png',
+        // PNG
+        'png32', 'png64', 'png128', 'png256',
+        // JPG
+        'jpg70', 'jpg80', 'jpg90'],
 
-// a factory that provides markers for Leaflet from MapBox's
-// [simple-style specification](https://github.com/mapbox/simplestyle-spec)
-// and [Markers API](http://mapbox.com/developers/api/#markers).
-function style(f, latlon) {
-    return L.marker(latlon, {
-        icon: icon(f.properties),
-        title: f.properties.title
-    });
-}
+    initialize: function(_, options) {
+        L.TileLayer.prototype.initialize.call(this, undefined, options);
 
-function createPopup(f, sanitizer) {
-    if (!f || !f.properties) return '';
-    var popup = '';
+        this._tilejson = {};
 
-    if (f.properties.title) {
-        popup += '<div class="marker-title">' + f.properties.title + '</div>';
+        if (options && options.detectRetina &&
+            L.Browser.retina && options.retinaVersion) {
+            _ = options.retinaVersion;
+        }
+
+        if (options && options.format) {
+            util.strict_oneof(options.format, this.formats);
+        }
+
+        this._loadTileJSON(_);
+    },
+
+    setFormat: function(_) {
+        util.strict(_, 'string');
+        this.options.format = _;
+        this.redraw();
+        return this;
+    },
+
+    // disable the setUrl function, which is not available on mapbox tilelayers
+    setUrl: null,
+
+    _setTileJSON: function(json) {
+        util.strict(json, 'object');
+
+        L.extend(this.options, {
+            tiles: json.tiles,
+            attribution: json.attribution,
+            minZoom: json.minzoom,
+            maxZoom: json.maxzoom,
+            tms: json.scheme === 'tms',
+            bounds: json.bounds && util.lbounds(json.bounds)
+        });
+
+        this._tilejson = json;
+        this.redraw();
+        return this;
+    },
+
+    getTileJSON: function() {
+        return this._tilejson;
+    },
+
+    // this is an exception to mapbox.js naming rules because it's called
+    // by `L.map`
+    getTileUrl: function(tilePoint) {
+        var tiles = this.options.tiles,
+            index = Math.abs(tilePoint.x + tilePoint.y) % tiles.length,
+            url = tiles[index];
+
+        var templated = L.Util.template(url, tilePoint);
+        if (!templated) return templated;
+        else return templated.replace('.png', '.' + this.options.format);
+    },
+
+    // TileJSON.TileLayers are added to the map immediately, so that they get
+    // the desired z-index, but do not update until the TileJSON has been loaded.
+    _update: function() {
+        if (this.options.tiles) {
+            L.TileLayer.prototype._update.call(this);
+        }
     }
+});
 
-    if (f.properties.description) {
-        popup += '<div class="marker-description">' + f.properties.description + '</div>';
-    }
-
-    return (sanitizer || sanitize)(popup);
-}
-
-module.exports = {
-    icon: icon,
-    style: style,
-    createPopup: createPopup
+module.exports = function(_, options) {
+    return new TileLayer(_, options);
 };
 
-},{"./url":41,"./sanitize":37}],31:[function(require,module,exports){
+},{"./util":41,"./url":40,"./load_tilejson":43}],30:[function(require,module,exports){
+'use strict';
+
+var ShareControl = L.Control.extend({
+    includes: [require('./load_tilejson')],
+
+    options: {
+        position: 'topleft',
+        url: ''
+    },
+
+    initialize: function(_, options) {
+        L.setOptions(this, options);
+        this._loadTileJSON(_);
+    },
+
+    _setTileJSON: function(json) {
+        this._tilejson = json;
+    },
+
+    onAdd: function(map) {
+        this._map = map;
+
+        var container = L.DomUtil.create('div', 'leaflet-control-mapbox-share leaflet-bar');
+        var link = L.DomUtil.create('a', 'mapbox-share mapbox-icon mapbox-icon-share', container);
+        link.href = '#';
+
+        L.DomEvent.addListener(link, 'click', this._share, this);
+        L.DomEvent.disableClickPropagation(container);
+
+        // Close any open popups
+
+
+        this._map.on('mousedown', this._clickOut, this);
+
+        return container;
+    },
+
+    _clickOut: function(e) {
+        if (this._popup) {
+            this._map.removeLayer(this._popup);
+            this._popup = null;
+            return;
+        }
+    },
+
+    _share: function(e) {
+        L.DomEvent.stop(e);
+
+        var tilejson = this._tilejson || this._map._tilejson || {},
+            twitter = 'http://twitter.com/intent/tweet?status=' +
+                encodeURIComponent(tilejson.name + '\n' + (tilejson.webpage || window.location)),
+            facebook = 'https://www.facebook.com/sharer.php?u=' +
+                encodeURIComponent(this.options.url || tilejson.webpage || window.location) +
+                '&t=' + encodeURIComponent(tilejson.name),
+            share =
+                "<a class='leaflet-popup-close-button' href='#close'>×</a>" +
+                ("<h3>Share this map</h3>" +
+                    "<div class='mapbox-share-buttons'><a class='mapbox-share-facebook mapbox-icon mapbox-icon-facebook' target='_blank' href='{{facebook}}'>Facebook</a>" +
+                    "<a class='mapbox-share-twitter mapbox-icon mapbox-icon-twitter' target='_blank' href='{{twitter}}'>Twitter</a></div>")
+                    .replace('{{twitter}}', twitter)
+                    .replace('{{facebook}}', facebook) +
+                ("<h3>Get the embed code</h3>" +
+                "<small>Copy and paste this HTML into your website or blog.</small>") +
+                "<textarea rows=4>{{value}}</textarea>"
+                    .replace('{{value}}', ("&lt;iframe width='500' height='300' frameBorder='0' src='{{embed}}'&gt;&lt;/iframe&gt;"
+                        .replace('{{embed}}', tilejson.embed || window.location)));
+
+        this._popup = L.marker(this._map.getCenter(), {
+            zIndexOffset: 10000,
+            icon: L.divIcon({
+                className: 'mapbox-share-popup',
+                iconSize: L.point(360, 240),
+                iconAnchor: L.point(180, 120),
+                html: share
+            })
+        })
+        .on('mousedown', function(e) {
+            L.DomEvent.stopPropagation(e.originalEvent);
+        })
+        .on('click', clickPopup, this).addTo(this._map);
+
+        function clickPopup(e) {
+            if (e.originalEvent && e.originalEvent.target.nodeName === 'TEXTAREA') {
+                var target = e.originalEvent.target;
+                target.focus();
+                target.select();
+            } else if (e.originalEvent && e.originalEvent.target.getAttribute('href') === '#close') {
+                this._clickOut(e);
+            }
+            L.DomEvent.stop(e.originalEvent);
+        }
+    }
+});
+
+module.exports = function(_, options) {
+    return new ShareControl(_, options);
+};
+
+},{"./load_tilejson":43}],31:[function(require,module,exports){
+'use strict';
+
+var LegendControl = L.Control.extend({
+
+    options: {
+        position: 'bottomright',
+        sanitizer: require('./sanitize')
+    },
+
+    initialize: function(options) {
+        L.setOptions(this, options);
+        this._legends = {};
+    },
+
+    onAdd: function(map) {
+        this._container = L.DomUtil.create('div', 'map-legends wax-legends');
+        L.DomEvent.disableClickPropagation(this._container);
+
+        this._update();
+
+        return this._container;
+    },
+
+    addLegend: function(text) {
+        if (!text) { return this; }
+
+        if (!this._legends[text]) {
+            this._legends[text] = 0;
+        }
+
+        this._legends[text]++;
+        return this._update();
+    },
+
+    removeLegend: function(text) {
+        if (!text) { return this; }
+        if (this._legends[text]) this._legends[text]--;
+        return this._update();
+    },
+
+    _update: function() {
+        if (!this._map) { return this; }
+
+        this._container.innerHTML = '';
+        var hide = 'none';
+
+        for (var i in this._legends) {
+            if (this._legends.hasOwnProperty(i) && this._legends[i]) {
+                var div = this._container.appendChild(document.createElement('div'));
+                div.className = 'map-legend wax-legend';
+                div.innerHTML = this.options.sanitizer(i);
+                hide = 'block';
+            }
+        }
+
+        // hide the control entirely unless there is at least one legend;
+        // otherwise there will be a small grey blemish on the map.
+        this._container.style.display = hide;
+
+        return this;
+    }
+});
+
+module.exports = function(options) {
+    return new LegendControl(options);
+};
+
+},{"./sanitize":37}],32:[function(require,module,exports){
 'use strict';
 
 var geocoder = require('./geocoder');
@@ -16010,75 +16274,7 @@ module.exports = function(options) {
     return new GeocoderControl(options);
 };
 
-},{"./geocoder":27}],32:[function(require,module,exports){
-'use strict';
-
-var LegendControl = L.Control.extend({
-
-    options: {
-        position: 'bottomright',
-        sanitizer: require('./sanitize')
-    },
-
-    initialize: function(options) {
-        L.setOptions(this, options);
-        this._legends = {};
-    },
-
-    onAdd: function(map) {
-        this._container = L.DomUtil.create('div', 'map-legends wax-legends');
-        L.DomEvent.disableClickPropagation(this._container);
-
-        this._update();
-
-        return this._container;
-    },
-
-    addLegend: function(text) {
-        if (!text) { return this; }
-
-        if (!this._legends[text]) {
-            this._legends[text] = 0;
-        }
-
-        this._legends[text]++;
-        return this._update();
-    },
-
-    removeLegend: function(text) {
-        if (!text) { return this; }
-        if (this._legends[text]) this._legends[text]--;
-        return this._update();
-    },
-
-    _update: function() {
-        if (!this._map) { return this; }
-
-        this._container.innerHTML = '';
-        var hide = 'none';
-
-        for (var i in this._legends) {
-            if (this._legends.hasOwnProperty(i) && this._legends[i]) {
-                var div = this._container.appendChild(document.createElement('div'));
-                div.className = 'map-legend wax-legend';
-                div.innerHTML = this.options.sanitizer(i);
-                hide = 'block';
-            }
-        }
-
-        // hide the control entirely unless there is at least one legend;
-        // otherwise there will be a small grey blemish on the map.
-        this._container.style.display = hide;
-
-        return this;
-    }
-});
-
-module.exports = function(options) {
-    return new LegendControl(options);
-};
-
-},{"./sanitize":37}],34:[function(require,module,exports){
+},{"./geocoder":28}],34:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16306,7 +16502,112 @@ module.exports = function(_, options) {
     return new GridLayer(_, options);
 };
 
-},{"./util":40,"./url":41,"./request":42,"./grid":43,"./load_tilejson":44}],35:[function(require,module,exports){
+},{"./util":41,"./request":42,"./url":40,"./grid":44,"./load_tilejson":43}],35:[function(require,module,exports){
+'use strict';
+
+var util = require('./util');
+var urlhelper = require('./url');
+var request = require('./request');
+var marker = require('./marker');
+
+// # markerLayer
+//
+// A layer of markers, loaded from MapBox or else. Adds the ability
+// to reset markers, filter them, and load them from a GeoJSON URL.
+var MarkerLayer = L.FeatureGroup.extend({
+    options: {
+        filter: function() { return true; },
+        sanitizer: require('./sanitize')
+    },
+
+    initialize: function(_, options) {
+        L.setOptions(this, options);
+
+        this._layers = {};
+
+        if (typeof _ === 'string') {
+            util.idUrl(_, this);
+        // javascript object of TileJSON data
+        } else if (_ && typeof _ === 'object') {
+            this.setGeoJSON(_);
+        }
+    },
+
+    setGeoJSON: function(_) {
+        this._geojson = _;
+        this.clearLayers();
+        this._initialize(_);
+    },
+
+    getGeoJSON: function() {
+        return this._geojson;
+    },
+
+    loadURL: function(url) {
+        url = urlhelper.jsonify(url);
+        request(url, L.bind(function(err, json) {
+            if (err) {
+                util.log('could not load markers at ' + url);
+                this.fire('error', {error: err});
+            } else if (json) {
+                this.setGeoJSON(json);
+                this.fire('ready');
+            }
+        }, this));
+        return this;
+    },
+
+    loadID: function(id) {
+        return this.loadURL(urlhelper.base() + id + '/markers.geojson');
+    },
+
+    setFilter: function(_) {
+        this.options.filter = _;
+        if (this._geojson) {
+            this.clearLayers();
+            this._initialize(this._geojson);
+        }
+        return this;
+    },
+
+    getFilter: function() {
+        return this.options.filter;
+    },
+
+    _initialize: function(json) {
+        var features = L.Util.isArray(json) ? json : json.features,
+            i, len;
+
+        if (features) {
+            for (i = 0, len = features.length; i < len; i++) {
+                // Only add this if geometry or geometries are set and not null
+                if (features[i].geometries || features[i].geometry || features[i].features) {
+                    this._initialize(features[i]);
+                }
+            }
+        } else if (this.options.filter(json)) {
+
+            var layer = L.GeoJSON.geometryToLayer(json, marker.style),
+                popupHtml = marker.createPopup(json, this.options.sanitizer);
+
+            layer.feature = json;
+
+            if (popupHtml) {
+                layer.bindPopup(popupHtml, {
+                    closeButton: false
+                });
+            }
+
+            this.addLayer(layer);
+        }
+    }
+});
+
+module.exports = function(_, options) {
+    return new MarkerLayer(_, options);
+};
+
+},{"./util":41,"./url":40,"./request":42,"./sanitize":37,"./marker":27}],36:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16428,305 +16729,7 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":40,"./tile_layer":29,"./marker_layer":36,"./grid_layer":34,"./grid_control":33,"./legend_control":32,"./load_tilejson":44}],36:[function(require,module,exports){
-'use strict';
-
-var util = require('./util');
-var urlhelper = require('./url');
-var request = require('./request');
-var marker = require('./marker');
-
-// # markerLayer
-//
-// A layer of markers, loaded from MapBox or else. Adds the ability
-// to reset markers, filter them, and load them from a GeoJSON URL.
-var MarkerLayer = L.FeatureGroup.extend({
-    options: {
-        filter: function() { return true; },
-        sanitizer: require('./sanitize')
-    },
-
-    initialize: function(_, options) {
-        L.setOptions(this, options);
-
-        this._layers = {};
-
-        if (typeof _ === 'string') {
-            util.idUrl(_, this);
-        // javascript object of TileJSON data
-        } else if (_ && typeof _ === 'object') {
-            this.setGeoJSON(_);
-        }
-    },
-
-    setGeoJSON: function(_) {
-        this._geojson = _;
-        this.clearLayers();
-        this._initialize(_);
-    },
-
-    getGeoJSON: function() {
-        return this._geojson;
-    },
-
-    loadURL: function(url) {
-        url = urlhelper.jsonify(url);
-        request(url, L.bind(function(err, json) {
-            if (err) {
-                util.log('could not load markers at ' + url);
-                this.fire('error', {error: err});
-            } else if (json) {
-                this.setGeoJSON(json);
-                this.fire('ready');
-            }
-        }, this));
-        return this;
-    },
-
-    loadID: function(id) {
-        return this.loadURL(urlhelper.base() + id + '/markers.geojson');
-    },
-
-    setFilter: function(_) {
-        this.options.filter = _;
-        if (this._geojson) {
-            this.clearLayers();
-            this._initialize(this._geojson);
-        }
-        return this;
-    },
-
-    getFilter: function() {
-        return this.options.filter;
-    },
-
-    _initialize: function(json) {
-        var features = L.Util.isArray(json) ? json : json.features,
-            i, len;
-
-        if (features) {
-            for (i = 0, len = features.length; i < len; i++) {
-                // Only add this if geometry or geometries are set and not null
-                if (features[i].geometries || features[i].geometry || features[i].features) {
-                    this._initialize(features[i]);
-                }
-            }
-        } else if (this.options.filter(json)) {
-
-            var layer = L.GeoJSON.geometryToLayer(json, marker.style),
-                popupHtml = marker.createPopup(json, this.options.sanitizer);
-
-            layer.feature = json;
-
-            if (popupHtml) {
-                layer.bindPopup(popupHtml, {
-                    closeButton: false
-                });
-            }
-
-            this.addLayer(layer);
-        }
-    }
-});
-
-module.exports = function(_, options) {
-    return new MarkerLayer(_, options);
-};
-
-},{"./util":40,"./url":41,"./request":42,"./marker":28,"./sanitize":37}],30:[function(require,module,exports){
-'use strict';
-
-var ShareControl = L.Control.extend({
-    includes: [require('./load_tilejson')],
-
-    options: {
-        position: 'topleft',
-        url: ''
-    },
-
-    initialize: function(_, options) {
-        L.setOptions(this, options);
-        this._loadTileJSON(_);
-    },
-
-    _setTileJSON: function(json) {
-        this._tilejson = json;
-    },
-
-    onAdd: function(map) {
-        this._map = map;
-
-        var container = L.DomUtil.create('div', 'leaflet-control-mapbox-share leaflet-bar');
-        var link = L.DomUtil.create('a', 'mapbox-share mapbox-icon mapbox-icon-share', container);
-        link.href = '#';
-
-        L.DomEvent.addListener(link, 'click', this._share, this);
-        L.DomEvent.disableClickPropagation(container);
-
-        // Close any open popups
-
-
-        this._map.on('mousedown', this._clickOut, this);
-
-        return container;
-    },
-
-    _clickOut: function(e) {
-        if (this._popup) {
-            this._map.removeLayer(this._popup);
-            this._popup = null;
-            return;
-        }
-    },
-
-    _share: function(e) {
-        L.DomEvent.stop(e);
-
-        var tilejson = this._tilejson || this._map._tilejson || {},
-            twitter = 'http://twitter.com/intent/tweet?status=' +
-                encodeURIComponent(tilejson.name + '\n' + (tilejson.webpage || window.location)),
-            facebook = 'https://www.facebook.com/sharer.php?u=' +
-                encodeURIComponent(this.options.url || tilejson.webpage || window.location) +
-                '&t=' + encodeURIComponent(tilejson.name),
-            share =
-                "<a class='leaflet-popup-close-button' href='#close'>×</a>" +
-                ("<h3>Share this map</h3>" +
-                    "<div class='mapbox-share-buttons'><a class='mapbox-share-facebook mapbox-icon mapbox-icon-facebook' target='_blank' href='{{facebook}}'>Facebook</a>" +
-                    "<a class='mapbox-share-twitter mapbox-icon mapbox-icon-twitter' target='_blank' href='{{twitter}}'>Twitter</a></div>")
-                    .replace('{{twitter}}', twitter)
-                    .replace('{{facebook}}', facebook) +
-                ("<h3>Get the embed code</h3>" +
-                "<small>Copy and paste this HTML into your website or blog.</small>") +
-                "<textarea rows=4>{{value}}</textarea>"
-                    .replace('{{value}}', ("&lt;iframe width='500' height='300' frameBorder='0' src='{{embed}}'&gt;&lt;/iframe&gt;"
-                        .replace('{{embed}}', tilejson.embed || window.location)));
-
-        this._popup = L.marker(this._map.getCenter(), {
-            zIndexOffset: 10000,
-            icon: L.divIcon({
-                className: 'mapbox-share-popup',
-                iconSize: L.point(360, 240),
-                iconAnchor: L.point(180, 120),
-                html: share
-            })
-        })
-        .on('mousedown', function(e) {
-            L.DomEvent.stopPropagation(e.originalEvent);
-        })
-        .on('click', clickPopup, this).addTo(this._map);
-
-        function clickPopup(e) {
-            if (e.originalEvent && e.originalEvent.target.nodeName === 'TEXTAREA') {
-                var target = e.originalEvent.target;
-                target.focus();
-                target.select();
-            } else if (e.originalEvent && e.originalEvent.target.getAttribute('href') === '#close') {
-                this._clickOut(e);
-            }
-            L.DomEvent.stop(e.originalEvent);
-        }
-    }
-});
-
-module.exports = function(_, options) {
-    return new ShareControl(_, options);
-};
-
-},{"./load_tilejson":44}],29:[function(require,module,exports){
-'use strict';
-
-var util = require('./util'),
-    url = require('./url');
-
-var TileLayer = L.TileLayer.extend({
-    includes: [require('./load_tilejson')],
-
-    options: {
-        format: 'png'
-    },
-
-    // http://mapbox.com/developers/api/#image_quality
-    formats: [
-        'png',
-        // PNG
-        'png32', 'png64', 'png128', 'png256',
-        // JPG
-        'jpg70', 'jpg80', 'jpg90'],
-
-    initialize: function(_, options) {
-        L.TileLayer.prototype.initialize.call(this, undefined, options);
-
-        this._tilejson = {};
-
-        if (options && options.detectRetina &&
-            L.Browser.retina && options.retinaVersion) {
-            _ = options.retinaVersion;
-        }
-
-        if (options && options.format) {
-            util.strict_oneof(options.format, this.formats);
-        }
-
-        this._loadTileJSON(_);
-    },
-
-    setFormat: function(_) {
-        util.strict(_, 'string');
-        this.options.format = _;
-        this.redraw();
-        return this;
-    },
-
-    // disable the setUrl function, which is not available on mapbox tilelayers
-    setUrl: null,
-
-    _setTileJSON: function(json) {
-        util.strict(json, 'object');
-
-        L.extend(this.options, {
-            tiles: json.tiles,
-            attribution: json.attribution,
-            minZoom: json.minzoom,
-            maxZoom: json.maxzoom,
-            tms: json.scheme === 'tms',
-            bounds: json.bounds && util.lbounds(json.bounds)
-        });
-
-        this._tilejson = json;
-        this.redraw();
-        return this;
-    },
-
-    getTileJSON: function() {
-        return this._tilejson;
-    },
-
-    // this is an exception to mapbox.js naming rules because it's called
-    // by `L.map`
-    getTileUrl: function(tilePoint) {
-        var tiles = this.options.tiles,
-            index = Math.abs(tilePoint.x + tilePoint.y) % tiles.length,
-            url = tiles[index];
-
-        var templated = L.Util.template(url, tilePoint);
-        if (!templated) return templated;
-        else return templated.replace('.png', '.' + this.options.format);
-    },
-
-    // TileJSON.TileLayers are added to the map immediately, so that they get
-    // the desired z-index, but do not update until the TileJSON has been loaded.
-    _update: function() {
-        if (this.options.tiles) {
-            L.TileLayer.prototype._update.call(this);
-        }
-    }
-});
-
-module.exports = function(_, options) {
-    return new TileLayer(_, options);
-};
-
-},{"./util":40,"./url":41,"./load_tilejson":44}],40:[function(require,module,exports){
+},{"./util":41,"./tile_layer":29,"./marker_layer":35,"./grid_layer":34,"./grid_control":33,"./legend_control":31,"./load_tilejson":43}],41:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -19209,7 +19212,7 @@ if (typeof module !== 'undefined') {
 }
 
 })()
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 'use strict';
 
 function utfDecode(c) {
@@ -19227,7 +19230,7 @@ module.exports = function(data) {
     };
 };
 
-},{}],41:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 'use strict';
 
 var config = require('./config');
@@ -19266,7 +19269,7 @@ module.exports = {
     }
 };
 
-},{"./config":26}],44:[function(require,module,exports){
+},{"./config":26}],43:[function(require,module,exports){
 'use strict';
 
 var request = require('./request'),
@@ -19295,7 +19298,7 @@ module.exports = {
     }
 };
 
-},{"./request":42,"./url":41,"./util":40}],33:[function(require,module,exports){
+},{"./request":42,"./url":40,"./util":41}],33:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -19489,7 +19492,7 @@ module.exports = function(_, options) {
     return new GridControl(_, options);
 };
 
-},{"./util":40,"./sanitize":37,"mustache":38}],42:[function(require,module,exports){
+},{"./util":41,"./sanitize":37,"mustache":38}],42:[function(require,module,exports){
 'use strict';
 
 var corslite = require('corslite'),
@@ -19513,7 +19516,7 @@ module.exports = function(url, callback) {
     });
 };
 
-},{"./util":40,"corslite":45,"json3":46}],45:[function(require,module,exports){
+},{"./util":41,"corslite":45,"json3":46}],45:[function(require,module,exports){
 function xhr(url, callback, cors) {
 
     if (typeof window.XMLHttpRequest === 'undefined') {
