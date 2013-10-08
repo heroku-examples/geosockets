@@ -6,7 +6,7 @@ module.exports = class Map
   lastRenderedAt: 0
   maxRenderInterval: 5*1000
   users: []
-  defaultLatLng: [37.7720947, -122.4021025]
+  defaultLatLng: [37.7720947, -122.4021025] # San Francisco
   defaultZoom: 4
   maxMarkersMobile: 50
   maxMarkersDesktop: 200
@@ -37,6 +37,7 @@ module.exports = class Map
     # Attempt to center map using the Geolocation API
     @map.locate
       setView: true
+      maxZoom: 11
 
     # Enable fullscreen option
     @map.addControl(new L.Control.FullScreen());

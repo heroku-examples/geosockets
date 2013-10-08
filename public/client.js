@@ -293,67 +293,7 @@ function isMobile (ua) {
       loaded ? fn() : fns.push(fn)
     })
 })
-},{}],4:[function(require,module,exports){
-(function() {
-  var GeolocationStream, Geopublisher, cookie, uuid,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-  cookie = require('cookie-cutter');
-
-  uuid = require('node-uuid');
-
-  GeolocationStream = require('geolocation-stream');
-
-  module.exports = Geopublisher = (function() {
-    Geopublisher.prototype.keepaliveInterval = 30 * 1000;
-
-    Geopublisher.prototype.lastPublishedAt = 0;
-
-    Geopublisher.prototype.position = {};
-
-    function Geopublisher(socket) {
-      var _this = this;
-      this.socket = socket;
-      this.publish = __bind(this.publish, this);
-      this.position.uuid = cookie.get('geosockets-uuid' || cookie.set('geosockets-uuid', uuid.v4()));
-      this.position.url = (document.querySelector('link[rel=canonical]') || window.location).href;
-      this.stream = GeolocationStream();
-      this.stream.on("data", function(position) {
-        _this.position.latitude = position.coords.latitude;
-        _this.position.longitude = position.coords.longitude;
-        return _this.publish();
-      });
-      this.stream.on("error", function(err) {
-        return log(err);
-      });
-      setInterval((function() {
-        return _this.publish();
-      }), this.keepaliveInterval);
-    }
-
-    Geopublisher.prototype.publish = function() {
-      if (socket.readyState !== 1) {
-        return;
-      }
-      if (!this.position.latitude) {
-        return;
-      }
-      if ((Date.now() - this.lastPublishedAt) < this.keepaliveInterval / 2) {
-        return;
-      }
-      log("publish position:", this.position);
-      this.socket.send(JSON.stringify(this.position));
-      return this.lastPublishedAt = Date.now();
-    };
-
-    return Geopublisher;
-
-  })();
-
-}).call(this);
-
-
-},{"cookie-cutter":8,"node-uuid":9,"geolocation-stream":10}],5:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 (function() {
   var Map,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -396,7 +336,8 @@ function isMobile (ua) {
       document.body.appendChild(link);
       this.map = L.mapbox.map('geosockets', 'examples.map-20v6611k').setView(this.defaultLatLng, this.defaultZoom);
       this.map.locate({
-        setView: true
+        setView: true,
+        maxZoom: 11
       });
       this.map.addControl(new L.Control.FullScreen());
       this.map.scrollWheelZoom.disable();
@@ -467,7 +408,67 @@ function isMobile (ua) {
 }).call(this);
 
 
-},{"mapbox.js":11}],8:[function(require,module,exports){
+},{"mapbox.js":8}],4:[function(require,module,exports){
+(function() {
+  var GeolocationStream, Geopublisher, cookie, uuid,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  cookie = require('cookie-cutter');
+
+  uuid = require('node-uuid');
+
+  GeolocationStream = require('geolocation-stream');
+
+  module.exports = Geopublisher = (function() {
+    Geopublisher.prototype.keepaliveInterval = 30 * 1000;
+
+    Geopublisher.prototype.lastPublishedAt = 0;
+
+    Geopublisher.prototype.position = {};
+
+    function Geopublisher(socket) {
+      var _this = this;
+      this.socket = socket;
+      this.publish = __bind(this.publish, this);
+      this.position.uuid = cookie.get('geosockets-uuid' || cookie.set('geosockets-uuid', uuid.v4()));
+      this.position.url = (document.querySelector('link[rel=canonical]') || window.location).href;
+      this.stream = GeolocationStream();
+      this.stream.on("data", function(position) {
+        _this.position.latitude = position.coords.latitude;
+        _this.position.longitude = position.coords.longitude;
+        return _this.publish();
+      });
+      this.stream.on("error", function(err) {
+        return log(err);
+      });
+      setInterval((function() {
+        return _this.publish();
+      }), this.keepaliveInterval);
+    }
+
+    Geopublisher.prototype.publish = function() {
+      if (socket.readyState !== 1) {
+        return;
+      }
+      if (!this.position.latitude) {
+        return;
+      }
+      if ((Date.now() - this.lastPublishedAt) < this.keepaliveInterval / 2) {
+        return;
+      }
+      log("publish position:", this.position);
+      this.socket.send(JSON.stringify(this.position));
+      return this.lastPublishedAt = Date.now();
+    };
+
+    return Geopublisher;
+
+  })();
+
+}).call(this);
+
+
+},{"cookie-cutter":9,"node-uuid":10,"geolocation-stream":11}],9:[function(require,module,exports){
 var exports = module.exports = function (doc) {
     if (!doc) doc = {};
     if (typeof doc === 'string') doc = { cookie: doc };
@@ -4366,7 +4367,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 },{}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 (function(Buffer){//     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -4614,7 +4615,7 @@ SlowBuffer.prototype.writeDoubleBE = Buffer.prototype.writeDoubleBE;
 }).call(this);
 
 })(require("__browserify_buffer").Buffer)
-},{"crypto":13,"__browserify_buffer":12}],10:[function(require,module,exports){
+},{"crypto":13,"__browserify_buffer":12}],11:[function(require,module,exports){
 var stream = require('stream')
 var util = require('util')
 
@@ -5128,11 +5129,11 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":16}],11:[function(require,module,exports){
+},{"events":16}],8:[function(require,module,exports){
 require('./leaflet');
 require('./mapbox');
 
-},{"./leaflet":17,"./mapbox":18}],19:[function(require,module,exports){
+},{"./mapbox":17,"./leaflet":18}],19:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -5448,7 +5449,257 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./md5":20,"./rng":21,"./sha":22}],20:[function(require,module,exports){
+},{"./sha":20,"./rng":21,"./md5":22}],20:[function(require,module,exports){
+/*
+ * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
+ * in FIPS PUB 180-1
+ * Version 2.1a Copyright Paul Johnston 2000 - 2002.
+ * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+ * Distributed under the BSD License
+ * See http://pajhome.org.uk/crypt/md5 for details.
+ */
+
+exports.hex_sha1 = hex_sha1;
+exports.b64_sha1 = b64_sha1;
+exports.str_sha1 = str_sha1;
+exports.hex_hmac_sha1 = hex_hmac_sha1;
+exports.b64_hmac_sha1 = b64_hmac_sha1;
+exports.str_hmac_sha1 = str_hmac_sha1;
+
+/*
+ * Configurable variables. You may need to tweak these to be compatible with
+ * the server-side, but the defaults work in most cases.
+ */
+var hexcase = 0;  /* hex output format. 0 - lowercase; 1 - uppercase        */
+var b64pad  = ""; /* base-64 pad character. "=" for strict RFC compliance   */
+var chrsz   = 8;  /* bits per input character. 8 - ASCII; 16 - Unicode      */
+
+/*
+ * These are the functions you'll usually want to call
+ * They take string arguments and return either hex or base-64 encoded strings
+ */
+function hex_sha1(s){return binb2hex(core_sha1(str2binb(s),s.length * chrsz));}
+function b64_sha1(s){return binb2b64(core_sha1(str2binb(s),s.length * chrsz));}
+function str_sha1(s){return binb2str(core_sha1(str2binb(s),s.length * chrsz));}
+function hex_hmac_sha1(key, data){ return binb2hex(core_hmac_sha1(key, data));}
+function b64_hmac_sha1(key, data){ return binb2b64(core_hmac_sha1(key, data));}
+function str_hmac_sha1(key, data){ return binb2str(core_hmac_sha1(key, data));}
+
+/*
+ * Perform a simple self-test to see if the VM is working
+ */
+function sha1_vm_test()
+{
+  return hex_sha1("abc") == "a9993e364706816aba3e25717850c26c9cd0d89d";
+}
+
+/*
+ * Calculate the SHA-1 of an array of big-endian words, and a bit length
+ */
+function core_sha1(x, len)
+{
+  /* append padding */
+  x[len >> 5] |= 0x80 << (24 - len % 32);
+  x[((len + 64 >> 9) << 4) + 15] = len;
+
+  var w = Array(80);
+  var a =  1732584193;
+  var b = -271733879;
+  var c = -1732584194;
+  var d =  271733878;
+  var e = -1009589776;
+
+  for(var i = 0; i < x.length; i += 16)
+  {
+    var olda = a;
+    var oldb = b;
+    var oldc = c;
+    var oldd = d;
+    var olde = e;
+
+    for(var j = 0; j < 80; j++)
+    {
+      if(j < 16) w[j] = x[i + j];
+      else w[j] = rol(w[j-3] ^ w[j-8] ^ w[j-14] ^ w[j-16], 1);
+      var t = safe_add(safe_add(rol(a, 5), sha1_ft(j, b, c, d)),
+                       safe_add(safe_add(e, w[j]), sha1_kt(j)));
+      e = d;
+      d = c;
+      c = rol(b, 30);
+      b = a;
+      a = t;
+    }
+
+    a = safe_add(a, olda);
+    b = safe_add(b, oldb);
+    c = safe_add(c, oldc);
+    d = safe_add(d, oldd);
+    e = safe_add(e, olde);
+  }
+  return Array(a, b, c, d, e);
+
+}
+
+/*
+ * Perform the appropriate triplet combination function for the current
+ * iteration
+ */
+function sha1_ft(t, b, c, d)
+{
+  if(t < 20) return (b & c) | ((~b) & d);
+  if(t < 40) return b ^ c ^ d;
+  if(t < 60) return (b & c) | (b & d) | (c & d);
+  return b ^ c ^ d;
+}
+
+/*
+ * Determine the appropriate additive constant for the current iteration
+ */
+function sha1_kt(t)
+{
+  return (t < 20) ?  1518500249 : (t < 40) ?  1859775393 :
+         (t < 60) ? -1894007588 : -899497514;
+}
+
+/*
+ * Calculate the HMAC-SHA1 of a key and some data
+ */
+function core_hmac_sha1(key, data)
+{
+  var bkey = str2binb(key);
+  if(bkey.length > 16) bkey = core_sha1(bkey, key.length * chrsz);
+
+  var ipad = Array(16), opad = Array(16);
+  for(var i = 0; i < 16; i++)
+  {
+    ipad[i] = bkey[i] ^ 0x36363636;
+    opad[i] = bkey[i] ^ 0x5C5C5C5C;
+  }
+
+  var hash = core_sha1(ipad.concat(str2binb(data)), 512 + data.length * chrsz);
+  return core_sha1(opad.concat(hash), 512 + 160);
+}
+
+/*
+ * Add integers, wrapping at 2^32. This uses 16-bit operations internally
+ * to work around bugs in some JS interpreters.
+ */
+function safe_add(x, y)
+{
+  var lsw = (x & 0xFFFF) + (y & 0xFFFF);
+  var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+  return (msw << 16) | (lsw & 0xFFFF);
+}
+
+/*
+ * Bitwise rotate a 32-bit number to the left.
+ */
+function rol(num, cnt)
+{
+  return (num << cnt) | (num >>> (32 - cnt));
+}
+
+/*
+ * Convert an 8-bit or 16-bit string to an array of big-endian words
+ * In 8-bit function, characters >255 have their hi-byte silently ignored.
+ */
+function str2binb(str)
+{
+  var bin = Array();
+  var mask = (1 << chrsz) - 1;
+  for(var i = 0; i < str.length * chrsz; i += chrsz)
+    bin[i>>5] |= (str.charCodeAt(i / chrsz) & mask) << (32 - chrsz - i%32);
+  return bin;
+}
+
+/*
+ * Convert an array of big-endian words to a string
+ */
+function binb2str(bin)
+{
+  var str = "";
+  var mask = (1 << chrsz) - 1;
+  for(var i = 0; i < bin.length * 32; i += chrsz)
+    str += String.fromCharCode((bin[i>>5] >>> (32 - chrsz - i%32)) & mask);
+  return str;
+}
+
+/*
+ * Convert an array of big-endian words to a hex string.
+ */
+function binb2hex(binarray)
+{
+  var hex_tab = hexcase ? "0123456789ABCDEF" : "0123456789abcdef";
+  var str = "";
+  for(var i = 0; i < binarray.length * 4; i++)
+  {
+    str += hex_tab.charAt((binarray[i>>2] >> ((3 - i%4)*8+4)) & 0xF) +
+           hex_tab.charAt((binarray[i>>2] >> ((3 - i%4)*8  )) & 0xF);
+  }
+  return str;
+}
+
+/*
+ * Convert an array of big-endian words to a base-64 string
+ */
+function binb2b64(binarray)
+{
+  var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  var str = "";
+  for(var i = 0; i < binarray.length * 4; i += 3)
+  {
+    var triplet = (((binarray[i   >> 2] >> 8 * (3 -  i   %4)) & 0xFF) << 16)
+                | (((binarray[i+1 >> 2] >> 8 * (3 - (i+1)%4)) & 0xFF) << 8 )
+                |  ((binarray[i+2 >> 2] >> 8 * (3 - (i+2)%4)) & 0xFF);
+    for(var j = 0; j < 4; j++)
+    {
+      if(i * 8 + j * 6 > binarray.length * 32) str += b64pad;
+      else str += tab.charAt((triplet >> 6*(3-j)) & 0x3F);
+    }
+  }
+  return str;
+}
+
+
+},{}],21:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
+},{}],22:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
  * Digest Algorithm, as defined in RFC 1321.
@@ -5834,257 +6085,7 @@ exports.hex_md5 = hex_md5;
 exports.b64_md5 = b64_md5;
 exports.any_md5 = any_md5;
 
-},{}],21:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
-
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
-},{}],22:[function(require,module,exports){
-/*
- * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
- * in FIPS PUB 180-1
- * Version 2.1a Copyright Paul Johnston 2000 - 2002.
- * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
- * Distributed under the BSD License
- * See http://pajhome.org.uk/crypt/md5 for details.
- */
-
-exports.hex_sha1 = hex_sha1;
-exports.b64_sha1 = b64_sha1;
-exports.str_sha1 = str_sha1;
-exports.hex_hmac_sha1 = hex_hmac_sha1;
-exports.b64_hmac_sha1 = b64_hmac_sha1;
-exports.str_hmac_sha1 = str_hmac_sha1;
-
-/*
- * Configurable variables. You may need to tweak these to be compatible with
- * the server-side, but the defaults work in most cases.
- */
-var hexcase = 0;  /* hex output format. 0 - lowercase; 1 - uppercase        */
-var b64pad  = ""; /* base-64 pad character. "=" for strict RFC compliance   */
-var chrsz   = 8;  /* bits per input character. 8 - ASCII; 16 - Unicode      */
-
-/*
- * These are the functions you'll usually want to call
- * They take string arguments and return either hex or base-64 encoded strings
- */
-function hex_sha1(s){return binb2hex(core_sha1(str2binb(s),s.length * chrsz));}
-function b64_sha1(s){return binb2b64(core_sha1(str2binb(s),s.length * chrsz));}
-function str_sha1(s){return binb2str(core_sha1(str2binb(s),s.length * chrsz));}
-function hex_hmac_sha1(key, data){ return binb2hex(core_hmac_sha1(key, data));}
-function b64_hmac_sha1(key, data){ return binb2b64(core_hmac_sha1(key, data));}
-function str_hmac_sha1(key, data){ return binb2str(core_hmac_sha1(key, data));}
-
-/*
- * Perform a simple self-test to see if the VM is working
- */
-function sha1_vm_test()
-{
-  return hex_sha1("abc") == "a9993e364706816aba3e25717850c26c9cd0d89d";
-}
-
-/*
- * Calculate the SHA-1 of an array of big-endian words, and a bit length
- */
-function core_sha1(x, len)
-{
-  /* append padding */
-  x[len >> 5] |= 0x80 << (24 - len % 32);
-  x[((len + 64 >> 9) << 4) + 15] = len;
-
-  var w = Array(80);
-  var a =  1732584193;
-  var b = -271733879;
-  var c = -1732584194;
-  var d =  271733878;
-  var e = -1009589776;
-
-  for(var i = 0; i < x.length; i += 16)
-  {
-    var olda = a;
-    var oldb = b;
-    var oldc = c;
-    var oldd = d;
-    var olde = e;
-
-    for(var j = 0; j < 80; j++)
-    {
-      if(j < 16) w[j] = x[i + j];
-      else w[j] = rol(w[j-3] ^ w[j-8] ^ w[j-14] ^ w[j-16], 1);
-      var t = safe_add(safe_add(rol(a, 5), sha1_ft(j, b, c, d)),
-                       safe_add(safe_add(e, w[j]), sha1_kt(j)));
-      e = d;
-      d = c;
-      c = rol(b, 30);
-      b = a;
-      a = t;
-    }
-
-    a = safe_add(a, olda);
-    b = safe_add(b, oldb);
-    c = safe_add(c, oldc);
-    d = safe_add(d, oldd);
-    e = safe_add(e, olde);
-  }
-  return Array(a, b, c, d, e);
-
-}
-
-/*
- * Perform the appropriate triplet combination function for the current
- * iteration
- */
-function sha1_ft(t, b, c, d)
-{
-  if(t < 20) return (b & c) | ((~b) & d);
-  if(t < 40) return b ^ c ^ d;
-  if(t < 60) return (b & c) | (b & d) | (c & d);
-  return b ^ c ^ d;
-}
-
-/*
- * Determine the appropriate additive constant for the current iteration
- */
-function sha1_kt(t)
-{
-  return (t < 20) ?  1518500249 : (t < 40) ?  1859775393 :
-         (t < 60) ? -1894007588 : -899497514;
-}
-
-/*
- * Calculate the HMAC-SHA1 of a key and some data
- */
-function core_hmac_sha1(key, data)
-{
-  var bkey = str2binb(key);
-  if(bkey.length > 16) bkey = core_sha1(bkey, key.length * chrsz);
-
-  var ipad = Array(16), opad = Array(16);
-  for(var i = 0; i < 16; i++)
-  {
-    ipad[i] = bkey[i] ^ 0x36363636;
-    opad[i] = bkey[i] ^ 0x5C5C5C5C;
-  }
-
-  var hash = core_sha1(ipad.concat(str2binb(data)), 512 + data.length * chrsz);
-  return core_sha1(opad.concat(hash), 512 + 160);
-}
-
-/*
- * Add integers, wrapping at 2^32. This uses 16-bit operations internally
- * to work around bugs in some JS interpreters.
- */
-function safe_add(x, y)
-{
-  var lsw = (x & 0xFFFF) + (y & 0xFFFF);
-  var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
-  return (msw << 16) | (lsw & 0xFFFF);
-}
-
-/*
- * Bitwise rotate a 32-bit number to the left.
- */
-function rol(num, cnt)
-{
-  return (num << cnt) | (num >>> (32 - cnt));
-}
-
-/*
- * Convert an 8-bit or 16-bit string to an array of big-endian words
- * In 8-bit function, characters >255 have their hi-byte silently ignored.
- */
-function str2binb(str)
-{
-  var bin = Array();
-  var mask = (1 << chrsz) - 1;
-  for(var i = 0; i < str.length * chrsz; i += chrsz)
-    bin[i>>5] |= (str.charCodeAt(i / chrsz) & mask) << (32 - chrsz - i%32);
-  return bin;
-}
-
-/*
- * Convert an array of big-endian words to a string
- */
-function binb2str(bin)
-{
-  var str = "";
-  var mask = (1 << chrsz) - 1;
-  for(var i = 0; i < bin.length * 32; i += chrsz)
-    str += String.fromCharCode((bin[i>>5] >>> (32 - chrsz - i%32)) & mask);
-  return str;
-}
-
-/*
- * Convert an array of big-endian words to a hex string.
- */
-function binb2hex(binarray)
-{
-  var hex_tab = hexcase ? "0123456789ABCDEF" : "0123456789abcdef";
-  var str = "";
-  for(var i = 0; i < binarray.length * 4; i++)
-  {
-    str += hex_tab.charAt((binarray[i>>2] >> ((3 - i%4)*8+4)) & 0xF) +
-           hex_tab.charAt((binarray[i>>2] >> ((3 - i%4)*8  )) & 0xF);
-  }
-  return str;
-}
-
-/*
- * Convert an array of big-endian words to a base-64 string
- */
-function binb2b64(binarray)
-{
-  var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  var str = "";
-  for(var i = 0; i < binarray.length * 4; i += 3)
-  {
-    var triplet = (((binarray[i   >> 2] >> 8 * (3 -  i   %4)) & 0xFF) << 16)
-                | (((binarray[i+1 >> 2] >> 8 * (3 - (i+1)%4)) & 0xFF) << 8 )
-                |  ((binarray[i+2 >> 2] >> 8 * (3 - (i+2)%4)) & 0xFF);
-    for(var j = 0; j < 4; j++)
-    {
-      if(i * 8 + j * 6 > binarray.length * 32) str += b64pad;
-      else str += tab.charAt((triplet >> 6*(3-j)) & 0x3F);
-    }
-  }
-  return str;
-}
-
-
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 window.L = require('leaflet/dist/leaflet-src');
 
 },{"leaflet/dist/leaflet-src":23}],24:[function(require,module,exports){
@@ -15020,7 +15021,7 @@ module.exports = {
         'https://d.tiles.mapbox.com/v3/']
 };
 
-},{}],18:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 // Hardcode image path, because Leaflet's autodetection
 // fails, because mapbox.js is not named leaflet.js
 window.L.Icon.Default.imagePath = '//api.tiles.mapbox.com/mapbox.js/' + 'v' +
@@ -15927,7 +15928,7 @@ module.exports = function(_, options) {
     return new TileLayer(_, options);
 };
 
-},{"./util":39,"./url":40,"./load_tilejson":42}],29:[function(require,module,exports){
+},{"./util":39,"./load_tilejson":42,"./url":40}],29:[function(require,module,exports){
 'use strict';
 
 var ShareControl = L.Control.extend({
@@ -16682,7 +16683,42 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":39,"./tile_layer":28,"./marker_layer":34,"./grid_layer":33,"./grid_control":32,"./legend_control":30,"./load_tilejson":42}],38:[function(require,module,exports){
+},{"./util":39,"./tile_layer":28,"./marker_layer":34,"./grid_layer":33,"./grid_control":32,"./legend_control":30,"./load_tilejson":42}],39:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+    idUrl: function(_, t) {
+        if (_.indexOf('/') == -1) t.loadID(_);
+        else t.loadURL(_);
+    },
+    log: function(_) {
+        if (console && typeof console.error === 'function') {
+            console.error(_);
+        }
+    },
+    strict: function(_, type) {
+        if (typeof _ !== type) {
+            throw new Error('Invalid argument: ' + type + ' expected');
+        }
+    },
+    strict_instance: function(_, klass, name) {
+        if (!(_ instanceof klass)) {
+            throw new Error('Invalid argument: ' + name + ' expected');
+        }
+    },
+    strict_oneof: function(_, values) {
+        if (values.indexOf(_) == -1) {
+            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
+                values.join(', '));
+        }
+    },
+    lbounds: function(_) {
+        // leaflet-compatible bounds, since leaflet does not do geojson
+        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
+    }
+};
+
+},{}],38:[function(require,module,exports){
 (function(){// Copyright (C) 2010 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19130,41 +19166,6 @@ if (typeof module !== 'undefined') {
 }
 
 })()
-},{}],39:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-    idUrl: function(_, t) {
-        if (_.indexOf('/') == -1) t.loadID(_);
-        else t.loadURL(_);
-    },
-    log: function(_) {
-        if (console && typeof console.error === 'function') {
-            console.error(_);
-        }
-    },
-    strict: function(_, type) {
-        if (typeof _ !== type) {
-            throw new Error('Invalid argument: ' + type + ' expected');
-        }
-    },
-    strict_instance: function(_, klass, name) {
-        if (!(_ instanceof klass)) {
-            throw new Error('Invalid argument: ' + name + ' expected');
-        }
-    },
-    strict_oneof: function(_, values) {
-        if (values.indexOf(_) == -1) {
-            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
-                values.join(', '));
-        }
-    },
-    lbounds: function(_) {
-        // leaflet-compatible bounds, since leaflet does not do geojson
-        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
-    }
-};
-
 },{}],43:[function(require,module,exports){
 'use strict';
 
