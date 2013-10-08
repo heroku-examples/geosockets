@@ -1,8 +1,9 @@
-window.mobile     = require 'is-mobile'
-domready          = require 'domready'
-Geopublisher      = require './lib/geopublisher.coffee'
-Map               = require './lib/map.coffee'
-window.log        = require './lib/logger.coffee'
+window.cookie    = require 'cookie-cutter'
+window.mobile    = require 'is-mobile'
+domready         = require 'domready'
+Geopublisher     = require './lib/geopublisher.coffee'
+Map              = require './lib/map.coffee'
+window.log       = require './lib/logger.coffee'
 
 window.Geosocket = class Geosocket
 

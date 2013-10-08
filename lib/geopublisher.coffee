@@ -1,4 +1,3 @@
-cookie     = require 'cookie-cutter'
 uuid              = require 'node-uuid'
 GeolocationStream = require 'geolocation-stream'
 

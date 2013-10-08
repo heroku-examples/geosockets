@@ -1,15 +1,18 @@
+merge = require 'merge'
 # Mapbox auto-attaches to window.L when you require it.
 # See https://github.com/mapbox/mapbox.js/pull/498
 require 'mapbox.js'
 
 module.exports = class Map
+  domId: 'geosockets'
+  tileSet: 'examples.map-20v6611k' # 'financialtimes.map-w7l4lfi8'
   lastRenderedAt: 0
-  maxRenderInterval: 5*1000
-  users: []
+  maxRenderInterval: 5*1000 # Don't render more than once every five seconds
+  users: [] # Container array for geodata between renders
   defaultLatLng: [37.7720947, -122.4021025] # San Francisco
-  defaultZoom: 4
+  defaultZoom: 11
   maxMarkersMobile: 50
-  maxMarkersDesktop: 200
+  maxMarkersDesktop: 300
   markerOptions:
     animate: true
     clickable: false
@@ -18,7 +21,7 @@ module.exports = class Map
     fillColor: "#6762A6"
     color: "#6762A6"
     weight: 2
-    fillOpacity: 0.8
+    fillOpacity: 1
 
   constructor: () ->
 
@@ -31,13 +34,11 @@ module.exports = class Map
 
     # Create the Mapbox map
     @map = L.mapbox
-      .map('geosockets', 'examples.map-20v6611k') # 'financialtimes.map-w7l4lfi8'
+      .map(@domId, @tileSet)
       .setView(@defaultLatLng, @defaultZoom)
-
-    # Attempt to center map using the Geolocation API
-    @map.locate
-      setView: true
-      maxZoom: 11
+      .locate
+        setView: true
+        maxZoom: 11
 
     # Enable fullscreen option
     @map.addControl(new L.Control.FullScreen());
@@ -62,6 +63,7 @@ module.exports = class Map
 
     # Put every current user on the map, even if they're already on it.
     newUsers = newUsers.map (user) =>
+      # return user if user.uuid is cookie.get('geosockets-uuid')
       user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], @markerOptions)
       user.marker.addTo(@map)
       user
@@ -86,8 +88,8 @@ module.exports = class Map
 L.AnimatedCircleMarker = L.CircleMarker.extend
   options:
     interval: 20 #ms
-    startRadius: 0
-    endRadius: 10
+    startRadius: 8
+    endRadius: 8
     increment: 2
 
   initialize: (latlngs, options) ->
@@ -97,12 +99,12 @@ L.AnimatedCircleMarker = L.CircleMarker.extend
     L.CircleMarker::onAdd.call @, map
     @_map = map
     @setRadius @options.startRadius
-    @timer = setInterval (=>@grow()), @options.interval
+    # @timer = setInterval (=>@grow()), @options.interval
 
-  grow: ->
-    @setRadius @_radius + @options.increment
-    if @_radius >= @options.endRadius
-      clearInterval @timer
+  # grow: ->
+  #   @setRadius @_radius + @options.increment
+  #   if @_radius >= @options.endRadius
+  #     clearInterval @timer
 
   remove: ->
     @_map.removeLayer(@)
