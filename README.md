@@ -29,7 +29,7 @@ Use CSS to configure the size and position of the map container:
 
 [server.coffee](https://github.com/heroku-examples/geosockets/blob/master/server.coffee) is a node app powered by [express 3](http://expressjs.com/guide.html), node's native [http](http://nodejs.org/api/http.html) module, and the [einaros/ws](https://github.com/einaros/ws/blob/master/doc/ws.md) WebSocket implementation. Express is used to serve the static frontend in `/public`.
 
-When building web apps designed to scale, one should never assume that anything cached in memory or on disk will be available on a future request or job. Geosockets uses Redis to persist visitor data, treating Dynos as [stateless processes](http://12factor.net/processes): changes in the app's [Dyno formation](https://devcenter.heroku.com/articles/scaling#dyno-formation) should be impercetible to users.
+The server was designed with horizontal scalability in mind. The shared location dataset is stored in a redis datastore and each web dyno connects to this shared resource to pull the complete list of pins to place on the map. Clients viewing the map each establish their own WebSocket connection to any one of the backend web dynos and receive real-time updates as locations are added and removed from the redis datastore.
 
 ### The Client
 
