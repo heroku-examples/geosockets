@@ -51,7 +51,7 @@ module.exports = class Map
         maxZoom: 11
 
     # Enable fullscreen option
-    @map.addControl(new L.Control.FullScreen());
+    @map.addControl(new L.Control.Fullscreen());
 
     # Accidentally scrolling with the trackpad sucks
     @map.scrollWheelZoom.disable()

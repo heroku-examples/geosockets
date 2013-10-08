@@ -1,165 +1,117 @@
 ;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
-L.Control.FullScreen = L.Control.extend({
-	options: {
-		position: 'topleft',
-		title: 'Full Screen',
-		forceSeparateButton: false
-	},
-	
-	onAdd: function (map) {
-		// Do nothing if we can't
-		if (!fullScreenApi.supportsFullScreen)
-			return map.zoomControl ? map.zoomControl._container : L.DomUtil.create('div', '');
-		
-		var className = 'leaflet-control-zoom-fullscreen', container;
-		
-		if(map.zoomControl && !this.options.forceSeparateButton) {
-			container = map.zoomControl._container;
-		} else {
-			container = L.DomUtil.create('div', 'leaflet-bar');
-		}
-		
-		this._createButton(this.options.title, className, container, this.toogleFullScreen, map);
+L.Control.Fullscreen = L.Control.extend({
+    options: {
+        position: 'topleft',
+        title: 'View Fullscreen'
+    },
 
-		return container;
-	},
-	
-	_createButton: function (title, className, container, fn, context) {
-		var link = L.DomUtil.create('a', className, container);
-		link.href = '#';
-		link.title = title;
+    onAdd: function (map) {
+        var container = L.DomUtil.create('div', 'leaflet-control-fullscreen leaflet-bar leaflet-control'),
+            link = L.DomUtil.create('a', 'leaflet-control-fullscreen-button leaflet-bar-part', container);
 
-		L.DomEvent
-			.addListener(link, 'click', L.DomEvent.stopPropagation)
-			.addListener(link, 'click', L.DomEvent.preventDefault)
-			.addListener(link, 'click', fn, context);
-		
-		L.DomEvent
-			.addListener(container, fullScreenApi.fullScreenEventName, L.DomEvent.stopPropagation)
-			.addListener(container, fullScreenApi.fullScreenEventName, L.DomEvent.preventDefault)
-			.addListener(container, fullScreenApi.fullScreenEventName, this._handleEscKey, context);
-		
-		L.DomEvent
-			.addListener(document, fullScreenApi.fullScreenEventName, L.DomEvent.stopPropagation)
-			.addListener(document, fullScreenApi.fullScreenEventName, L.DomEvent.preventDefault)
-			.addListener(document, fullScreenApi.fullScreenEventName, this._handleEscKey, context);
+        this._map = map;
 
-		return link;
-	},
-	
-	toogleFullScreen: function () {
-		this._exitFired = false;
-		if (fullScreenApi.supportsFullScreen){
-			var container = this._container;
-			if(fullScreenApi.isFullScreen(container)){
-				fullScreenApi.cancelFullScreen(container);
-				this.invalidateSize();
-				this.fire('exitFullscreen');
-				this._exitFired = true;
-			}
-			else {
-				fullScreenApi.requestFullScreen(container);
-				this.invalidateSize();
-				this.fire('enterFullscreen');
-			}
-		}
-	},
-	
-	_handleEscKey: function () {
-		if(!fullScreenApi.isFullScreen(this) && !this._exitFired){
-			this.fire('exitFullscreen');
-			this._exitFired = true;
-		}
-	}
+        link.href = '#';
+        link.title = this.options.title;
+
+        L.DomEvent.on(link, 'click', this._click, this);
+
+        return container;
+    },
+
+    _click: function (e) {
+        L.DomEvent.stopPropagation(e);
+        L.DomEvent.preventDefault(e);
+        this._map.toggleFullscreen();
+    }
+});
+
+L.Map.include({
+    isFullscreen: function () {
+        return this._isFullscreen;
+    },
+
+    toggleFullscreen: function () {
+        var container = this.getContainer();
+        if (this.isFullscreen()) {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.webkitCancelFullScreen) {
+                document.webkitCancelFullScreen();
+            } else {
+                L.DomUtil.removeClass(container, 'leaflet-pseudo-fullscreen');
+                this.invalidateSize();
+                this._isFullscreen = false;
+                this.fire('fullscreenchange');
+            }
+        } else {
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.mozRequestFullScreen) {
+                container.mozRequestFullScreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+            } else {
+                L.DomUtil.addClass(container, 'leaflet-pseudo-fullscreen');
+                this.invalidateSize();
+                this._isFullscreen = true;
+                this.fire('fullscreenchange');
+            }
+        }
+    },
+
+    _onFullscreenChange: function () {
+        var fullscreenElement =
+            document.fullscreenElement ||
+            document.mozFullScreenElement ||
+            document.webkitFullscreenElement;
+
+        if (fullscreenElement === this.getContainer()) {
+            this._isFullscreen = true;
+            this.fire('fullscreenchange');
+        } else if (this._isFullscreen) {
+            this._isFullscreen = false;
+            this.fire('fullscreenchange');
+        }
+    }
+});
+
+L.Map.mergeOptions({
+    fullscreenControl: false
 });
 
 L.Map.addInitHook(function () {
-	if (this.options.fullscreenControl) {
-		this.fullscreenControl = L.control.fullscreen(this.options.fullscreenControlOptions);
-		this.addControl(this.fullscreenControl);
-	}
+    if (this.options.fullscreenControl) {
+        this.fullscreenControl = new L.Control.Fullscreen();
+        this.addControl(this.fullscreenControl);
+    }
+
+    var fullscreenchange;
+
+    if ('onfullscreenchange' in document) {
+        fullscreenchange = 'fullscreenchange';
+    } else if ('onmozfullscreenchange' in document) {
+        fullscreenchange = 'mozfullscreenchange';
+    } else if ('onwebkitfullscreenchange' in document) {
+        fullscreenchange = 'webkitfullscreenchange';
+    }
+
+    if (fullscreenchange) {
+        this.on('load', function () {
+            L.DomEvent.on(document, fullscreenchange, this._onFullscreenChange, this);
+        });
+
+        this.on('unload', function () {
+            L.DomEvent.off(document, fullscreenchange, this._onFullscreenChange);
+        });
+    }
 });
 
 L.control.fullscreen = function (options) {
-	return new L.Control.FullScreen(options);
+    return new L.Control.Fullscreen(options);
 };
-
-/* 
-Native FullScreen JavaScript API
--------------
-Assumes Mozilla naming conventions instead of W3C for now
-
-source : http://johndyer.name/native-fullscreen-javascript-api-plus-jquery-plugin/
-
-*/
-
-(function() {
-	var 
-		fullScreenApi = { 
-			supportsFullScreen: false,
-			isFullScreen: function() { return false; }, 
-			requestFullScreen: function() {}, 
-			cancelFullScreen: function() {},
-			fullScreenEventName: '',
-			prefix: ''
-		},
-		browserPrefixes = 'webkit moz o ms khtml'.split(' ');
-	
-	// check for native support
-	if (typeof document.exitFullscreen != 'undefined') {
-		fullScreenApi.supportsFullScreen = true;
-	} else {	 
-		// check for fullscreen support by vendor prefix
-		for (var i = 0, il = browserPrefixes.length; i < il; i++ ) {
-			fullScreenApi.prefix = browserPrefixes[i];
-			
-			if (typeof document[fullScreenApi.prefix + 'CancelFullScreen' ] != 'undefined' ) {
-				fullScreenApi.supportsFullScreen = true;
-				
-				break;
-			}
-		}
-	}
-	
-	// update methods to do something useful
-	if (fullScreenApi.supportsFullScreen) {
-		fullScreenApi.fullScreenEventName = fullScreenApi.prefix + 'fullscreenchange';
-		
-		fullScreenApi.isFullScreen = function() {
-			switch (this.prefix) {	
-				case '':
-					return document.fullScreen;
-				case 'webkit':
-					return document.webkitIsFullScreen;
-				default:
-					return document[this.prefix + 'FullScreen'];
-			}
-		}
-		fullScreenApi.requestFullScreen = function(el) {
-			return (this.prefix === '') ? el.requestFullscreen() : el[this.prefix + 'RequestFullScreen'](Element.ALLOW_KEYBOARD_INPUT);
-		}
-		fullScreenApi.cancelFullScreen = function(el) {
-			return (this.prefix === '') ? document.exitFullscreen() : document[this.prefix + 'CancelFullScreen']();
-		}		
-	}
-
-	// jQuery plugin
-	if (typeof jQuery != 'undefined') {
-		jQuery.fn.requestFullScreen = function() {
-	
-			return this.each(function() {
-				var el = jQuery(this);
-				if (fullScreenApi.supportsFullScreen) {
-					fullScreenApi.requestFullScreen(el);
-				}
-			});
-		};
-	}
-
-	// export api
-	window.fullScreenApi = fullScreenApi;	
-})();
-
 },{}],2:[function(require,module,exports){
 (function() {
   module.exports = function() {
@@ -225,7 +177,7 @@ source : http://johndyer.name/native-fullscreen-javascript-api-plus-jquery-plugi
 }).call(this);
 
 
-},{"./lib/geopublisher.coffee":4,"./lib/map.coffee":5,"./lib/logger.coffee":2,"domready":6,"cookie-cutter":7,"is-mobile":8}],7:[function(require,module,exports){
+},{"./lib/geopublisher.coffee":4,"./lib/map.coffee":5,"./lib/logger.coffee":2,"cookie-cutter":6,"is-mobile":7,"domready":8}],6:[function(require,module,exports){
 var exports = module.exports = function (doc) {
     if (!doc) doc = {};
     if (typeof doc === 'string') doc = { cookie: doc };
@@ -259,7 +211,21 @@ if (typeof document !== 'undefined') {
     exports.set = cookie.set;
 }
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
+module.exports = isMobile;
+
+function isMobile (ua) {
+  if (!ua && typeof navigator != 'undefined') ua = navigator.userAgent;
+  if (ua && ua.headers && typeof ua.headers['user-agent'] == 'string') {
+    ua = ua.headers['user-agent'];
+  }
+  if (typeof ua != 'string') return false;
+
+  return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(ua) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(ua.substr(0,4));
+}
+
+
+},{}],8:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -315,20 +281,6 @@ if (typeof document !== 'undefined') {
       loaded ? fn() : fns.push(fn)
     })
 })
-},{}],8:[function(require,module,exports){
-module.exports = isMobile;
-
-function isMobile (ua) {
-  if (!ua && typeof navigator != 'undefined') ua = navigator.userAgent;
-  if (ua && ua.headers && typeof ua.headers['user-agent'] == 'string') {
-    ua = ua.headers['user-agent'];
-  }
-  if (typeof ua != 'string') return false;
-
-  return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(ua) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(ua.substr(0,4));
-}
-
-
 },{}],4:[function(require,module,exports){
 (function() {
   var GeolocationStream, Geopublisher, uuid,
@@ -450,7 +402,7 @@ function isMobile (ua) {
         setView: true,
         maxZoom: 11
       });
-      this.map.addControl(new L.Control.FullScreen());
+      this.map.addControl(new L.Control.Fullscreen());
       this.map.scrollWheelZoom.disable();
     }
 
@@ -5550,7 +5502,45 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./sha":21,"./rng":22,"./md5":23}],21:[function(require,module,exports){
+},{"./sha":21,"./rng":22,"./md5":23}],22:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
+},{}],21:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5762,44 +5752,6 @@ function binb2b64(binarray)
 }
 
 
-},{}],22:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
-
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
 },{}],23:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
@@ -6235,26 +6187,6 @@ module.exports={
   "_id": "mapbox.js@1.3.1",
   "_from": "mapbox.js@"
 }
-
-},{}],26:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-
-    HTTP_URLS: [
-        'http://a.tiles.mapbox.com/v3/',
-        'http://b.tiles.mapbox.com/v3/',
-        'http://c.tiles.mapbox.com/v3/',
-        'http://d.tiles.mapbox.com/v3/'],
-
-    FORCE_HTTPS: false,
-
-    HTTPS_URLS: [
-        'https://a.tiles.mapbox.com/v3/',
-        'https://b.tiles.mapbox.com/v3/',
-        'https://c.tiles.mapbox.com/v3/',
-        'https://d.tiles.mapbox.com/v3/']
-};
 
 },{}],24:[function(require,module,exports){
 (function(){/*
@@ -15122,6 +15054,26 @@ L.Map.include({
 
 }(window, document));
 })()
+},{}],26:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+
+    HTTP_URLS: [
+        'http://a.tiles.mapbox.com/v3/',
+        'http://b.tiles.mapbox.com/v3/',
+        'http://c.tiles.mapbox.com/v3/',
+        'http://d.tiles.mapbox.com/v3/'],
+
+    FORCE_HTTPS: false,
+
+    HTTPS_URLS: [
+        'https://a.tiles.mapbox.com/v3/',
+        'https://b.tiles.mapbox.com/v3/',
+        'https://c.tiles.mapbox.com/v3/',
+        'https://d.tiles.mapbox.com/v3/']
+};
+
 },{}],19:[function(require,module,exports){
 // Hardcode image path, because Leaflet's autodetection
 // fails, because mapbox.js is not named leaflet.js
@@ -15872,7 +15824,7 @@ module.exports = function(_) {
     return geocoder;
 };
 
-},{"./url":40,"./util":41,"./request":42}],28:[function(require,module,exports){
+},{"./util":40,"./url":41,"./request":42}],28:[function(require,module,exports){
 'use strict';
 
 var url = require('./url'),
@@ -15935,7 +15887,7 @@ module.exports = {
     createPopup: createPopup
 };
 
-},{"./url":40,"./sanitize":37}],29:[function(require,module,exports){
+},{"./url":41,"./sanitize":37}],29:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16029,7 +15981,7 @@ module.exports = function(_, options) {
     return new TileLayer(_, options);
 };
 
-},{"./util":41,"./url":40,"./load_tilejson":43}],30:[function(require,module,exports){
+},{"./util":40,"./url":41,"./load_tilejson":43}],30:[function(require,module,exports){
 'use strict';
 
 var ShareControl = L.Control.extend({
@@ -16557,7 +16509,7 @@ module.exports = function(_, options) {
     return new GridLayer(_, options);
 };
 
-},{"./util":41,"./url":40,"./request":42,"./grid":44,"./load_tilejson":43}],35:[function(require,module,exports){
+},{"./util":40,"./url":41,"./request":42,"./grid":44,"./load_tilejson":43}],35:[function(require,module,exports){
 'use strict';
 
 var util = require('./util');
@@ -16662,7 +16614,7 @@ module.exports = function(_, options) {
     return new MarkerLayer(_, options);
 };
 
-},{"./util":41,"./url":40,"./request":42,"./marker":28,"./sanitize":37}],36:[function(require,module,exports){
+},{"./util":40,"./url":41,"./request":42,"./marker":28,"./sanitize":37}],36:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16784,7 +16736,42 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":41,"./tile_layer":29,"./marker_layer":35,"./grid_layer":34,"./grid_control":33,"./legend_control":31,"./load_tilejson":43}],39:[function(require,module,exports){
+},{"./util":40,"./tile_layer":29,"./marker_layer":35,"./grid_layer":34,"./grid_control":33,"./legend_control":31,"./load_tilejson":43}],40:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+    idUrl: function(_, t) {
+        if (_.indexOf('/') == -1) t.loadID(_);
+        else t.loadURL(_);
+    },
+    log: function(_) {
+        if (console && typeof console.error === 'function') {
+            console.error(_);
+        }
+    },
+    strict: function(_, type) {
+        if (typeof _ !== type) {
+            throw new Error('Invalid argument: ' + type + ' expected');
+        }
+    },
+    strict_instance: function(_, klass, name) {
+        if (!(_ instanceof klass)) {
+            throw new Error('Invalid argument: ' + name + ' expected');
+        }
+    },
+    strict_oneof: function(_, values) {
+        if (values.indexOf(_) == -1) {
+            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
+                values.join(', '));
+        }
+    },
+    lbounds: function(_) {
+        // leaflet-compatible bounds, since leaflet does not do geojson
+        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
+    }
+};
+
+},{}],39:[function(require,module,exports){
 (function(){// Copyright (C) 2010 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19232,41 +19219,6 @@ if (typeof module !== 'undefined') {
 }
 
 })()
-},{}],41:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-    idUrl: function(_, t) {
-        if (_.indexOf('/') == -1) t.loadID(_);
-        else t.loadURL(_);
-    },
-    log: function(_) {
-        if (console && typeof console.error === 'function') {
-            console.error(_);
-        }
-    },
-    strict: function(_, type) {
-        if (typeof _ !== type) {
-            throw new Error('Invalid argument: ' + type + ' expected');
-        }
-    },
-    strict_instance: function(_, klass, name) {
-        if (!(_ instanceof klass)) {
-            throw new Error('Invalid argument: ' + name + ' expected');
-        }
-    },
-    strict_oneof: function(_, values) {
-        if (values.indexOf(_) == -1) {
-            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
-                values.join(', '));
-        }
-    },
-    lbounds: function(_) {
-        // leaflet-compatible bounds, since leaflet does not do geojson
-        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
-    }
-};
-
 },{}],44:[function(require,module,exports){
 'use strict';
 
@@ -19285,7 +19237,7 @@ module.exports = function(data) {
     };
 };
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 'use strict';
 
 var config = require('./config');
@@ -19353,7 +19305,7 @@ module.exports = {
     }
 };
 
-},{"./request":42,"./url":40,"./util":41}],33:[function(require,module,exports){
+},{"./request":42,"./url":41,"./util":40}],33:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -19547,7 +19499,7 @@ module.exports = function(_, options) {
     return new GridControl(_, options);
 };
 
-},{"./util":41,"./sanitize":37,"mustache":38}],42:[function(require,module,exports){
+},{"./util":40,"./sanitize":37,"mustache":38}],42:[function(require,module,exports){
 'use strict';
 
 var corslite = require('corslite'),
@@ -19571,7 +19523,7 @@ module.exports = function(url, callback) {
     });
 };
 
-},{"./util":41,"corslite":45,"json3":46}],45:[function(require,module,exports){
+},{"./util":40,"corslite":45,"json3":46}],45:[function(require,module,exports){
 function xhr(url, callback, cors) {
 
     if (typeof window.XMLHttpRequest === 'undefined') {
