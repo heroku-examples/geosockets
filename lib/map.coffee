@@ -14,14 +14,24 @@ module.exports = class Map
   maxMarkersMobile: 50
   maxMarkersDesktop: 300
   markerOptions:
-    animate: true
     clickable: false
     keyboard: false
-    opacity: 1
-    fillColor: "#6762A6"
-    color: "#6762A6"
     weight: 2
+    color: "#6762A6"
+    opacity: 1
+    fillColor: "#9674B7"
     fillOpacity: 1
+    radius: 8
+  userMarkerOptions:
+    clickable: false
+    keyboard: false
+    weight: 3
+    color: "#9674B7"
+    opacity: 1
+    fillColor: "#FFF"
+    fillOpacity: 0.7
+    radius: 20
+    dashArray: "4, 8"
 
   constructor: () ->
 
@@ -53,29 +63,39 @@ module.exports = class Map
       log "rendered recently, skipping this round"
       return
 
-    # Don't render too many markers on mobile devices
-    if mobile()
-      log "mobile device detected, capping markers at #{@maxMarkersMobile}"
-      newUsers = newUsers.reverse().slice(0, @maxMarkersMobile)
+    # Move the current user to the end of the array
+    # so their marker z-index will be higher
+    newUsers = newUsers.sort (a,b) ->
+      a.uuid is cookie.get('geosockets-uuid')
 
-    # Don't render too many markers on any device
-    newUsers = newUsers.reverse().slice(0, @maxMarkersDesktop)
+    # Don't render more markers than the browser can handle
+    # Take the users of the end of the array, so as to keep the newer
+    # users and the current user.
+    slice = if mobile() then @maxMarkersMobile else @maxMarkersDesktop
+    newUsers = newUsers.slice -slice
 
-    # Put every current user on the map, even if they're already on it.
+    # Put every user on the map, even if they're already on it.
     newUsers = newUsers.map (user) =>
-      # return user if user.uuid is cookie.get('geosockets-uuid')
-      user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], @markerOptions)
+      if user.uuid is cookie.get('geosockets-uuid')
+        # Use 2 markers to denote the current users: one dot, one circumscribing dashed line
+        user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], @userMarkerOptions)
+        user.marker2 = new L.AnimatedCircleMarker([user.latitude, user.longitude], @markerOptions)
+      else
+        user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], @markerOptions)
+
       user.marker.addTo(@map)
+      user.marker2.addTo(@map) if user.marker2
       user
 
-    # Now that all current user markers are drawn,
+    # Now that all user markers are drawn,
     # remove the previously rendered batch of markers
     @users.map (user) =>
       user.marker.remove()
+      user.marker2.remove() if user.marker2
 
-    # The number of SVG groups should equal the number of users,
+    # The number of SVG groups should equal to the number of users,
     # Keep an eye on it for performance reasons.
-    log "markers: ",
+    log "marker count: ",
       document.querySelectorAll('.leaflet-container svg g').length
 
     # The new users will be the oldies next time around. Cycle of life, man.
@@ -98,7 +118,7 @@ L.AnimatedCircleMarker = L.CircleMarker.extend
   onAdd: (map) ->
     L.CircleMarker::onAdd.call @, map
     @_map = map
-    @setRadius @options.startRadius
+    @setRadius @options.radius
     # @timer = setInterval (=>@grow()), @options.interval
 
   # grow: ->

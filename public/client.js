@@ -225,7 +225,7 @@ source : http://johndyer.name/native-fullscreen-javascript-api-plus-jquery-plugi
 }).call(this);
 
 
-},{"./lib/geopublisher.coffee":4,"./lib/map.coffee":5,"./lib/logger.coffee":2,"cookie-cutter":6,"is-mobile":7,"domready":8}],6:[function(require,module,exports){
+},{"./lib/geopublisher.coffee":4,"./lib/map.coffee":5,"./lib/logger.coffee":2,"domready":6,"cookie-cutter":7,"is-mobile":8}],7:[function(require,module,exports){
 var exports = module.exports = function (doc) {
     if (!doc) doc = {};
     if (typeof doc === 'string') doc = { cookie: doc };
@@ -259,21 +259,7 @@ if (typeof document !== 'undefined') {
     exports.set = cookie.set;
 }
 
-},{}],7:[function(require,module,exports){
-module.exports = isMobile;
-
-function isMobile (ua) {
-  if (!ua && typeof navigator != 'undefined') ua = navigator.userAgent;
-  if (ua && ua.headers && typeof ua.headers['user-agent'] == 'string') {
-    ua = ua.headers['user-agent'];
-  }
-  if (typeof ua != 'string') return false;
-
-  return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(ua) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(ua.substr(0,4));
-}
-
-
-},{}],8:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2012 - License MIT
   */
@@ -329,6 +315,20 @@ function isMobile (ua) {
       loaded ? fn() : fns.push(fn)
     })
 })
+},{}],8:[function(require,module,exports){
+module.exports = isMobile;
+
+function isMobile (ua) {
+  if (!ua && typeof navigator != 'undefined') ua = navigator.userAgent;
+  if (ua && ua.headers && typeof ua.headers['user-agent'] == 'string') {
+    ua = ua.headers['user-agent'];
+  }
+  if (typeof ua != 'string') return false;
+
+  return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(ua) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(ua.substr(0,4));
+}
+
+
 },{}],4:[function(require,module,exports){
 (function() {
   var GeolocationStream, Geopublisher, uuid,
@@ -416,14 +416,26 @@ function isMobile (ua) {
     Map.prototype.maxMarkersDesktop = 300;
 
     Map.prototype.markerOptions = {
-      animate: true,
       clickable: false,
       keyboard: false,
-      opacity: 1,
-      fillColor: "#6762A6",
-      color: "#6762A6",
       weight: 2,
-      fillOpacity: 1
+      color: "#6762A6",
+      opacity: 1,
+      fillColor: "#9674B7",
+      fillOpacity: 1,
+      radius: 8
+    };
+
+    Map.prototype.userMarkerOptions = {
+      clickable: false,
+      keyboard: false,
+      weight: 3,
+      color: "#9674B7",
+      opacity: 1,
+      fillColor: "#FFF",
+      fillOpacity: 0.7,
+      radius: 20,
+      dashArray: "4, 8"
     };
 
     function Map() {
@@ -443,25 +455,37 @@ function isMobile (ua) {
     }
 
     Map.prototype.render = function(newUsers) {
-      var _this = this;
+      var slice,
+        _this = this;
       if ((Date.now() - this.lastRenderedAt) < this.maxRenderInterval) {
         log("rendered recently, skipping this round");
         return;
       }
-      if (mobile()) {
-        log("mobile device detected, capping markers at " + this.maxMarkersMobile);
-        newUsers = newUsers.reverse().slice(0, this.maxMarkersMobile);
-      }
-      newUsers = newUsers.reverse().slice(0, this.maxMarkersDesktop);
+      newUsers = newUsers.sort(function(a, b) {
+        return a.uuid === cookie.get('geosockets-uuid');
+      });
+      slice = mobile() ? this.maxMarkersMobile : this.maxMarkersDesktop;
+      newUsers = newUsers.slice(-slice);
       newUsers = newUsers.map(function(user) {
-        user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], _this.markerOptions);
+        if (user.uuid === cookie.get('geosockets-uuid')) {
+          user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], _this.userMarkerOptions);
+          user.marker2 = new L.AnimatedCircleMarker([user.latitude, user.longitude], _this.markerOptions);
+        } else {
+          user.marker = new L.AnimatedCircleMarker([user.latitude, user.longitude], _this.markerOptions);
+        }
         user.marker.addTo(_this.map);
+        if (user.marker2) {
+          user.marker2.addTo(_this.map);
+        }
         return user;
       });
       this.users.map(function(user) {
-        return user.marker.remove();
+        user.marker.remove();
+        if (user.marker2) {
+          return user.marker2.remove();
+        }
       });
-      log("markers: ", document.querySelectorAll('.leaflet-container svg g').length);
+      log("marker count: ", document.querySelectorAll('.leaflet-container svg g').length);
       this.users = newUsers;
       return this.lastRenderedAt = Date.now();
     };
@@ -483,7 +507,7 @@ function isMobile (ua) {
     onAdd: function(map) {
       L.CircleMarker.prototype.onAdd.call(this, map);
       this._map = map;
-      return this.setRadius(this.options.startRadius);
+      return this.setRadius(this.options.radius);
     },
     remove: function() {
       return this._map.removeLayer(this);
@@ -5526,45 +5550,7 @@ exports.randomBytes = function(size, callback) {
   }
 })
 
-},{"./sha":21,"./rng":22,"./md5":23}],22:[function(require,module,exports){
-// Original code adapted from Robert Kieffer.
-// details at https://github.com/broofa/node-uuid
-(function() {
-  var _global = this;
-
-  var mathRNG, whatwgRNG;
-
-  // NOTE: Math.random() does not guarantee "cryptographic quality"
-  mathRNG = function(size) {
-    var bytes = new Array(size);
-    var r;
-
-    for (var i = 0, r; i < size; i++) {
-      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
-      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return bytes;
-  }
-
-  // currently only available in webkit-based browsers.
-  if (_global.crypto && crypto.getRandomValues) {
-    var _rnds = new Uint32Array(4);
-    whatwgRNG = function(size) {
-      var bytes = new Array(size);
-      crypto.getRandomValues(_rnds);
-
-      for (var c = 0 ; c < size; c++) {
-        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
-      }
-      return bytes;
-    }
-  }
-
-  module.exports = whatwgRNG || mathRNG;
-
-}())
-},{}],21:[function(require,module,exports){
+},{"./sha":21,"./rng":22,"./md5":23}],21:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -5776,6 +5762,44 @@ function binb2b64(binarray)
 }
 
 
+},{}],22:[function(require,module,exports){
+// Original code adapted from Robert Kieffer.
+// details at https://github.com/broofa/node-uuid
+(function() {
+  var _global = this;
+
+  var mathRNG, whatwgRNG;
+
+  // NOTE: Math.random() does not guarantee "cryptographic quality"
+  mathRNG = function(size) {
+    var bytes = new Array(size);
+    var r;
+
+    for (var i = 0, r; i < size; i++) {
+      if ((i & 0x03) == 0) r = Math.random() * 0x100000000;
+      bytes[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return bytes;
+  }
+
+  // currently only available in webkit-based browsers.
+  if (_global.crypto && crypto.getRandomValues) {
+    var _rnds = new Uint32Array(4);
+    whatwgRNG = function(size) {
+      var bytes = new Array(size);
+      crypto.getRandomValues(_rnds);
+
+      for (var c = 0 ; c < size; c++) {
+        bytes[c] = _rnds[c >> 2] >>> ((c & 0x03) * 8) & 0xff;
+      }
+      return bytes;
+    }
+  }
+
+  module.exports = whatwgRNG || mathRNG;
+
+}())
 },{}],23:[function(require,module,exports){
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
@@ -6211,6 +6235,26 @@ module.exports={
   "_id": "mapbox.js@1.3.1",
   "_from": "mapbox.js@"
 }
+
+},{}],26:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+
+    HTTP_URLS: [
+        'http://a.tiles.mapbox.com/v3/',
+        'http://b.tiles.mapbox.com/v3/',
+        'http://c.tiles.mapbox.com/v3/',
+        'http://d.tiles.mapbox.com/v3/'],
+
+    FORCE_HTTPS: false,
+
+    HTTPS_URLS: [
+        'https://a.tiles.mapbox.com/v3/',
+        'https://b.tiles.mapbox.com/v3/',
+        'https://c.tiles.mapbox.com/v3/',
+        'https://d.tiles.mapbox.com/v3/']
+};
 
 },{}],24:[function(require,module,exports){
 (function(){/*
@@ -15078,26 +15122,6 @@ L.Map.include({
 
 }(window, document));
 })()
-},{}],26:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-
-    HTTP_URLS: [
-        'http://a.tiles.mapbox.com/v3/',
-        'http://b.tiles.mapbox.com/v3/',
-        'http://c.tiles.mapbox.com/v3/',
-        'http://d.tiles.mapbox.com/v3/'],
-
-    FORCE_HTTPS: false,
-
-    HTTPS_URLS: [
-        'https://a.tiles.mapbox.com/v3/',
-        'https://b.tiles.mapbox.com/v3/',
-        'https://c.tiles.mapbox.com/v3/',
-        'https://d.tiles.mapbox.com/v3/']
-};
-
 },{}],19:[function(require,module,exports){
 // Hardcode image path, because Leaflet's autodetection
 // fails, because mapbox.js is not named leaflet.js
@@ -15121,7 +15145,7 @@ L.mapbox = module.exports = {
     template: require('mustache').to_html
 };
 
-},{"./package.json":25,"./src/geocoder":27,"./src/marker":28,"./src/tile_layer":29,"./src/share_control":30,"./src/geocoder_control":31,"./src/grid_control":32,"./src/legend_control":33,"./src/grid_layer":34,"./src/marker_layer":35,"./src/map":36,"./src/config":26,"./src/sanitize":37,"mustache":38}],37:[function(require,module,exports){
+},{"./package.json":25,"./src/geocoder":27,"./src/marker":28,"./src/tile_layer":29,"./src/share_control":30,"./src/legend_control":31,"./src/geocoder_control":32,"./src/grid_control":33,"./src/grid_layer":34,"./src/marker_layer":35,"./src/map":36,"./src/config":26,"./src/sanitize":37,"mustache":38}],37:[function(require,module,exports){
 'use strict';
 
 var html_sanitize = require('../ext/sanitizer/html-sanitizer-bundle.js');
@@ -15848,7 +15872,7 @@ module.exports = function(_) {
     return geocoder;
 };
 
-},{"./util":40,"./url":41,"./request":42}],28:[function(require,module,exports){
+},{"./url":40,"./util":41,"./request":42}],28:[function(require,module,exports){
 'use strict';
 
 var url = require('./url'),
@@ -15911,7 +15935,7 @@ module.exports = {
     createPopup: createPopup
 };
 
-},{"./url":41,"./sanitize":37}],29:[function(require,module,exports){
+},{"./url":40,"./sanitize":37}],29:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16005,7 +16029,7 @@ module.exports = function(_, options) {
     return new TileLayer(_, options);
 };
 
-},{"./util":40,"./url":41,"./load_tilejson":43}],30:[function(require,module,exports){
+},{"./util":41,"./url":40,"./load_tilejson":43}],30:[function(require,module,exports){
 'use strict';
 
 var ShareControl = L.Control.extend({
@@ -16105,6 +16129,74 @@ module.exports = function(_, options) {
 };
 
 },{"./load_tilejson":43}],31:[function(require,module,exports){
+'use strict';
+
+var LegendControl = L.Control.extend({
+
+    options: {
+        position: 'bottomright',
+        sanitizer: require('./sanitize')
+    },
+
+    initialize: function(options) {
+        L.setOptions(this, options);
+        this._legends = {};
+    },
+
+    onAdd: function(map) {
+        this._container = L.DomUtil.create('div', 'map-legends wax-legends');
+        L.DomEvent.disableClickPropagation(this._container);
+
+        this._update();
+
+        return this._container;
+    },
+
+    addLegend: function(text) {
+        if (!text) { return this; }
+
+        if (!this._legends[text]) {
+            this._legends[text] = 0;
+        }
+
+        this._legends[text]++;
+        return this._update();
+    },
+
+    removeLegend: function(text) {
+        if (!text) { return this; }
+        if (this._legends[text]) this._legends[text]--;
+        return this._update();
+    },
+
+    _update: function() {
+        if (!this._map) { return this; }
+
+        this._container.innerHTML = '';
+        var hide = 'none';
+
+        for (var i in this._legends) {
+            if (this._legends.hasOwnProperty(i) && this._legends[i]) {
+                var div = this._container.appendChild(document.createElement('div'));
+                div.className = 'map-legend wax-legend';
+                div.innerHTML = this.options.sanitizer(i);
+                hide = 'block';
+            }
+        }
+
+        // hide the control entirely unless there is at least one legend;
+        // otherwise there will be a small grey blemish on the map.
+        this._container.style.display = hide;
+
+        return this;
+    }
+});
+
+module.exports = function(options) {
+    return new LegendControl(options);
+};
+
+},{"./sanitize":37}],32:[function(require,module,exports){
 'use strict';
 
 var geocoder = require('./geocoder');
@@ -16237,75 +16329,7 @@ module.exports = function(options) {
     return new GeocoderControl(options);
 };
 
-},{"./geocoder":27}],33:[function(require,module,exports){
-'use strict';
-
-var LegendControl = L.Control.extend({
-
-    options: {
-        position: 'bottomright',
-        sanitizer: require('./sanitize')
-    },
-
-    initialize: function(options) {
-        L.setOptions(this, options);
-        this._legends = {};
-    },
-
-    onAdd: function(map) {
-        this._container = L.DomUtil.create('div', 'map-legends wax-legends');
-        L.DomEvent.disableClickPropagation(this._container);
-
-        this._update();
-
-        return this._container;
-    },
-
-    addLegend: function(text) {
-        if (!text) { return this; }
-
-        if (!this._legends[text]) {
-            this._legends[text] = 0;
-        }
-
-        this._legends[text]++;
-        return this._update();
-    },
-
-    removeLegend: function(text) {
-        if (!text) { return this; }
-        if (this._legends[text]) this._legends[text]--;
-        return this._update();
-    },
-
-    _update: function() {
-        if (!this._map) { return this; }
-
-        this._container.innerHTML = '';
-        var hide = 'none';
-
-        for (var i in this._legends) {
-            if (this._legends.hasOwnProperty(i) && this._legends[i]) {
-                var div = this._container.appendChild(document.createElement('div'));
-                div.className = 'map-legend wax-legend';
-                div.innerHTML = this.options.sanitizer(i);
-                hide = 'block';
-            }
-        }
-
-        // hide the control entirely unless there is at least one legend;
-        // otherwise there will be a small grey blemish on the map.
-        this._container.style.display = hide;
-
-        return this;
-    }
-});
-
-module.exports = function(options) {
-    return new LegendControl(options);
-};
-
-},{"./sanitize":37}],34:[function(require,module,exports){
+},{"./geocoder":27}],34:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16533,7 +16557,7 @@ module.exports = function(_, options) {
     return new GridLayer(_, options);
 };
 
-},{"./util":40,"./url":41,"./request":42,"./grid":44,"./load_tilejson":43}],35:[function(require,module,exports){
+},{"./util":41,"./url":40,"./request":42,"./grid":44,"./load_tilejson":43}],35:[function(require,module,exports){
 'use strict';
 
 var util = require('./util');
@@ -16638,7 +16662,7 @@ module.exports = function(_, options) {
     return new MarkerLayer(_, options);
 };
 
-},{"./util":40,"./url":41,"./request":42,"./marker":28,"./sanitize":37}],36:[function(require,module,exports){
+},{"./util":41,"./url":40,"./request":42,"./marker":28,"./sanitize":37}],36:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -16760,42 +16784,7 @@ module.exports = function(element, _, options) {
     return new Map(element, _, options);
 };
 
-},{"./util":40,"./tile_layer":29,"./marker_layer":35,"./grid_layer":34,"./grid_control":32,"./legend_control":33,"./load_tilejson":43}],40:[function(require,module,exports){
-'use strict';
-
-module.exports = {
-    idUrl: function(_, t) {
-        if (_.indexOf('/') == -1) t.loadID(_);
-        else t.loadURL(_);
-    },
-    log: function(_) {
-        if (console && typeof console.error === 'function') {
-            console.error(_);
-        }
-    },
-    strict: function(_, type) {
-        if (typeof _ !== type) {
-            throw new Error('Invalid argument: ' + type + ' expected');
-        }
-    },
-    strict_instance: function(_, klass, name) {
-        if (!(_ instanceof klass)) {
-            throw new Error('Invalid argument: ' + name + ' expected');
-        }
-    },
-    strict_oneof: function(_, values) {
-        if (values.indexOf(_) == -1) {
-            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
-                values.join(', '));
-        }
-    },
-    lbounds: function(_) {
-        // leaflet-compatible bounds, since leaflet does not do geojson
-        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
-    }
-};
-
-},{}],39:[function(require,module,exports){
+},{"./util":41,"./tile_layer":29,"./marker_layer":35,"./grid_layer":34,"./grid_control":33,"./legend_control":31,"./load_tilejson":43}],39:[function(require,module,exports){
 (function(){// Copyright (C) 2010 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19243,6 +19232,41 @@ if (typeof module !== 'undefined') {
 }
 
 })()
+},{}],41:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+    idUrl: function(_, t) {
+        if (_.indexOf('/') == -1) t.loadID(_);
+        else t.loadURL(_);
+    },
+    log: function(_) {
+        if (console && typeof console.error === 'function') {
+            console.error(_);
+        }
+    },
+    strict: function(_, type) {
+        if (typeof _ !== type) {
+            throw new Error('Invalid argument: ' + type + ' expected');
+        }
+    },
+    strict_instance: function(_, klass, name) {
+        if (!(_ instanceof klass)) {
+            throw new Error('Invalid argument: ' + name + ' expected');
+        }
+    },
+    strict_oneof: function(_, values) {
+        if (values.indexOf(_) == -1) {
+            throw new Error('Invalid argument: ' + _ + ' given, valid values are ' +
+                values.join(', '));
+        }
+    },
+    lbounds: function(_) {
+        // leaflet-compatible bounds, since leaflet does not do geojson
+        return new L.LatLngBounds([[_[1], _[0]], [_[3], _[2]]]);
+    }
+};
+
 },{}],44:[function(require,module,exports){
 'use strict';
 
@@ -19261,7 +19285,7 @@ module.exports = function(data) {
     };
 };
 
-},{}],41:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 'use strict';
 
 var config = require('./config');
@@ -19329,7 +19353,7 @@ module.exports = {
     }
 };
 
-},{"./request":42,"./url":41,"./util":40}],32:[function(require,module,exports){
+},{"./request":42,"./url":40,"./util":41}],33:[function(require,module,exports){
 'use strict';
 
 var util = require('./util'),
@@ -19523,7 +19547,7 @@ module.exports = function(_, options) {
     return new GridControl(_, options);
 };
 
-},{"./util":40,"./sanitize":37,"mustache":38}],42:[function(require,module,exports){
+},{"./util":41,"./sanitize":37,"mustache":38}],42:[function(require,module,exports){
 'use strict';
 
 var corslite = require('corslite'),
@@ -19547,7 +19571,7 @@ module.exports = function(url, callback) {
     });
 };
 
-},{"./util":40,"corslite":45,"json3":46}],45:[function(require,module,exports){
+},{"./util":41,"corslite":45,"json3":46}],45:[function(require,module,exports){
 function xhr(url, callback, cors) {
 
     if (typeof window.XMLHttpRequest === 'undefined') {
