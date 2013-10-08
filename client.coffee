@@ -1,4 +1,5 @@
 window.cookie    = require 'cookie-cutter'
+window.uuid      = require 'node-uuid'
 window.mobile    = require 'is-mobile'
 domready         = require 'domready'
 Geopublisher     = require './lib/geopublisher.coffee'
