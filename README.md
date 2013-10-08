@@ -1,6 +1,6 @@
 # Geosockets
 
-Geosockets is a node webserver and javascript browser client for rendering website
+Geosockets is a Node.js webserver and javascript browser client for rendering website
 visitors on a map in realtime using WebSockets and the browser's Geolocation API.
 
 See the demo app at [geosockets.herokuapp.com](https://geosockets.herokuapp.com).
@@ -29,18 +29,26 @@ Use CSS to configure the size and position of the map container:
 
 [server.coffee](https://github.com/heroku-examples/geosockets/blob/master/server.coffee) is a node app powered by [express 3](http://expressjs.com/guide.html), node's native [http](http://nodejs.org/api/http.html) module, and the [einaros/ws](https://github.com/einaros/ws/blob/master/doc/ws.md) WebSocket implementation. Express is used to serve the static frontend in `/public`.
 
-When building web apps designed to scale, you should never assume that anything cached in memory or on disk will be available on a future request or job. Geosockets uses Redis to persist visitor data, treating Dynos as [stateless processes](http://12factor.net/processes): changes in the app's [Dyno formation](https://devcenter.heroku.com/articles/scaling#dyno-formation) should be impercetible to users.
+When building web apps designed to scale, one should never assume that anything cached in memory or on disk will be available on a future request or job. Geosockets uses Redis to persist visitor data, treating Dynos as [stateless processes](http://12factor.net/processes): changes in the app's [Dyno formation](https://devcenter.heroku.com/articles/scaling#dyno-formation) should be impercetible to users.
 
 ### The Client
 
-[client.coffee](https://github.com/heroku-examples/geosockets/blob/master/client.coffee) is also written as a node app. [Browserify](https://github.com/substack/node-browserify#readme) and [Grunt](http://gruntjs.com/) are used to compile the client into a single browser-ready javascript file.
+[client.coffee](https://github.com/heroku-examples/geosockets/blob/master/client.coffee) is also written as a node app. [Coffeeify](https://github.com/substack/coffeeify), the red-headed step-child of [browserify](https://github.com/substack/node-browserify#readme), is used in concert with [Grunt](http://gruntjs.com/) to transpile the client into a single browser-ready javascript file.
 
 When the client is first run in the browser, a [UUID](https://github.com/broofa/node-uuid#readme) token is generated and stored in a cookie which is passed to the server in the headers of each WebSocket message. This gives the server a consistent way to identify each user.
 
-The client uses the [browser's geolocation API](https://www.google.com/search?q=browser%20geolocation%20api) and the [geolocation-stream](https://github.com/maxogden/geolocation-stream#readme) node module to determine the user's physical location, continually listening for location updates in realtime.
+The client uses the [browser's geolocation API](https://www.google.com/search?q=browser%20geolocation%20api) and the [geolocation-stream](https://github.com/maxogden/geolocation-stream#readme) node module to determine the user's physical location, continually listening for location updates in realtime. EOnce the WebSocket connection is establised, the client broadcasts its location to the server:
 
-Once the WebSocket connection is establised, the client broadcasts its location to the server. The client then listens
-for messages from the server, rendering and removing markers from the map as site visitors come and go.
+```js
+{
+  uuid: '6e381608-2e63-4e40-bf6c-31754935a5c2',
+  url: 'https://blog.heroku.com/archives/2013/10/3/websockets-public-beta',
+  latitude: 37.7521248,
+  longitude: -122.42365649999999
+}
+```
+
+The client then listens for messages from the server, rendering and removing markers from the map as site visitors come and go.
 
 ### Running Geosockets Locally
 
