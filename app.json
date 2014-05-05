@@ -1,7 +1,7 @@
 {
   "name": "Geosockets",
   "description": "Render website visitors on a map in realtime using WebSockets and the browser's Geolocation API.",
-  "keywords": ["geo", "gis", "map", "cartography", "analytics", "websockets"],
+  "keywords": ["geo", "gis", "map", "cartography", "analytics", "websockets", "node", "redis"],
   "website": "https://github.com/heroku-examples/geosockets",
   "repository": "https://github.com/heroku-examples/geosockets",
   "success_url": "https://github.com/heroku-examples/geosockets#readme",
@@ -9,8 +9,5 @@
   "addons": [
     "openredis",
     "papertrail"
-  ],
-  "env": {
-    "BUILDPACK_URL": "https://github.com/zeke/harp-buildpack"
-  }
+  ]
 }
