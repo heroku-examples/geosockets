@@ -74,6 +74,7 @@ Clone the repo and install npm dependencies:
 git clone https://github.com/heroku-examples/geosockets.git
 cd geosockets
 npm install
+npm install -g grunt-cli
 ```
 
 The foreman [Procfile](https://github.com/heroku-examples/geosockets/blob/master/Procfile) defines the processes
