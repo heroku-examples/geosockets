@@ -40,7 +40,7 @@ When the server receives a message from a client, it adds the client's location 
 The server then fetches all keys from Redis that match that URL and broadcasts the update
 to all connected clients at that same URL.
 
-### Embedding the Javscript Client on Your Site
+### Embedding the Javascript Client on Your Site
 
 The Geosockets JavasScript client can be used on any website:
 
